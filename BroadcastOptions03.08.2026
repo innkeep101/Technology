@@ -1,0 +1,323 @@
+# Outside Inn Studios — Streaming Methods Reference
+**Living Document | Last updated March 2026**
+
+> Two methods documented here: the current VPS method (what's running now) and the Mac Mini method (the upgrade). Read both. The VPS method stays relevant as a fallback even after the Mac Mini is in place.
+
+---
+
+## METHOD 1 — Current: VPS + FFmpeg + OBS (What's Running Now)
+
+### How It Works
+
+Two separate encoders compete for one YouTube stream key. Only one can be active at a time. Switching between them requires manually killing one before starting the other — causing a 30–60 second gap on YouTube each way.
+
+```
+Lo-Fi Radio (default):
+[DigitalOcean VPS: FFmpeg loops HoldtLoop.mp4] → [Restream] → [YouTube @EIWerner]
+
+Live Stream (when going live):
+[Laptop: OBS via NVENC] → [Restream] → [YouTube @EIWerner]
+```
+
+### Infrastructure
+
+| Component | Details |
+|---|---|
+| VPS | DigitalOcean, Ubuntu 24.04, 1GB RAM, 1 vCPU, NYC3 |
+| Process manager | tmux (session named "stream") |
+| Video encoder | FFmpeg — stream-copy, no re-encoding, minimal CPU |
+| Relay | Restream Standard (~$16/mo) → YouTube + Twitch when added |
+| Lofi file | HoldtLoop.mp4 — 1h40m, 1920x1080, 6fps, H.264 + AAC, ~1.28GB |
+| Local encoder | OBS Studio via NVENC (RTX 5070) on AERO X16 laptop |
+
+### The Lofi File — How HoldtLoop.mp4 Was Built
+
+**Source material:**
+- 480 PNG frames (1920x1080, sequential 1.png–480.png) — art by Marwan Hasnaoui
+- 1h40m lo-fi music loop (LofiLoop.wav) — composed by Carson Thatcher
+
+**Step 1 — Build 6fps silent video from PNGs:**
+```bash
+ffmpeg -framerate 6 -i "D:\StreamSourceFiles\HoldtAnimationPNGs1\%d.png" -c:v libx264 -pix_fmt yuv420p "D:\StreamSourceFiles\holdt_6fps.mp4"
+```
+
+**Step 2 — Loop animation to match full music duration (6000 seconds = 1h40m):**
+```bash
+ffmpeg -stream_loop -1 -i "D:\StreamSourceFiles\holdt_6fps.mp4" -i "D:\StreamSourceFiles\LofiLoop.wav" -map 0:v -map 1:a -c:v libx264 -g 12 -keyint_min 12 -c:a aac -t 6000 "D:\StreamSourceFiles\HoldtLoop.mp4"
+```
+> ⚠️ `-g 12 -keyint_min 12` = 2-second keyframe interval at 6fps. Required for YouTube "Good" stream health. Omitting this causes "Poor" health. Rebuild with these flags if file is replaced.
+
+**Step 3 — Upload to VPS:**
+```bash
+scp D:\StreamSourceFiles\HoldtLoop.mp4 root@[SERVER_IP]:/root/
+```
+
+**File locations:**
+
+| File | Location |
+|---|---|
+| Source PNGs (480 frames) | `D:\StreamSourceFiles\HoldtAnimationPNGs1\` |
+| Lo-Fi music (original WAV) | `D:\StreamSourceFiles\LofiLoop.wav` |
+| Intermediate (6fps silent) | `D:\StreamSourceFiles\holdt_6fps.mp4` |
+| Final loop (video + audio) | `D:\StreamSourceFiles\HoldtLoop.mp4` |
+| VPS copy | `/root/HoldtLoop.mp4` |
+
+> All local source files stored on SanDisk Extreme 2TB SSD (portable, device-agnostic path).
+
+---
+
+### PowerShell Commands — Full Reference
+
+#### Check if lofi stream is running
+```powershell
+ssh root@[SERVER_IP]
+tmux attach -t stream
+# If time= values are scrolling → stream is running
+# Close the PowerShell window — safe, stream keeps running
+```
+
+#### Restart lofi stream after a drop
+```powershell
+ssh root@[SERVER_IP]
+tmux attach -t stream
+# Run the FFmpeg command (see credentials doc for full command with stream key)
+# Wait until time= starts scrolling
+# Close the PowerShell window — stream keeps running
+```
+
+#### Go live from OBS — full procedure
+
+**Step 1: Kill the lofi stream (MUST do first)**
+```powershell
+ssh root@[SERVER_IP]
+tmux attach -t stream
+# Press Q to stop FFmpeg
+# Close the PowerShell window
+```
+
+**Step 2: Go live**
+```
+Open OBS on laptop → Hit Start Streaming → Live
+```
+
+**Step 3: Bring Holdt back after stream ends**
+```
+Stop stream in OBS
+```
+```powershell
+ssh root@[SERVER_IP]
+tmux attach -t stream
+# Run the FFmpeg command (see credentials doc)
+# Wait until time= starts scrolling
+# Close the PowerShell window — Holdt is back
+```
+
+> ⚠️ Between killing FFmpeg and starting OBS, and between stopping OBS and restarting FFmpeg, YouTube has no input. Expect 30–60 second blip each way. This is unavoidable under the current architecture.
+
+#### Update the video file on VPS
+```powershell
+# Step 1: Stop FFmpeg (see Go Live Step 1 above)
+
+# Step 2: Upload new file
+scp [local_path]/HoldtLoop.mp4 root@[SERVER_IP]:/root/
+
+# Step 3: Restart FFmpeg (see Bring Holdt Back above)
+```
+
+#### tmux reference
+```powershell
+tmux attach -t stream        # Attach to running session
+# Ctrl+B then D              # Formal detach (two separate actions, not held)
+# Just close the window      # Always safe — tmux keeps FFmpeg running
+```
+
+---
+
+### Known Issues (VPS Method)
+
+| Issue | Priority | Fix | Status |
+|---|---|---|---|
+| No auto-restart when Restream drops VPS connection | **High** | Build shell loop wrapper on VPS | Needed |
+| Keyframe interval ~41s (YouTube health "Poor") on current file | Medium | Rebuild HoldtLoop.mp4 with `-g 12 -keyint_min 12`, re-upload | Pending |
+| Credentials in plain text in docs | Medium | Redact, move to password manager | In progress |
+| VPS default root password unchanged | Medium | `passwd` on server | Next SSH session |
+| No seamless VPS ↔ OBS handoff | Low | nginx-rtmp traffic controller | Deferred |
+
+### Auto-Restart Fix (High Priority — Needed Before Athens)
+
+Wrap the FFmpeg command in a shell loop on the VPS so it automatically restarts if Restream drops the connection:
+
+```bash
+while true; do
+  ffmpeg [full FFmpeg command with stream key]
+  echo "FFmpeg exited — restarting in 5 seconds..."
+  sleep 5
+done
+```
+
+Run this inside the tmux session instead of the bare FFmpeg command. If FFmpeg crashes or Restream drops, it restarts automatically within 5 seconds without SSH intervention.
+
+---
+
+### VPS Method — Honest Limitations
+
+- **30–60 second blip** every time you go live and every time you end a stream. Viewers see nothing.
+- **Manual SSH ritual** required before and after every live session. From anywhere in the world.
+- **No OBS scene structure** during the lofi radio — FFmpeg just loops the file, no overlays, no Stream Deck control, no warmup/cooldown scenes.
+- **Fragile by design** — if you forget to kill FFmpeg before starting OBS, or forget to restart it after, things break.
+- **VPS keeps running costs** — $6/mo DigitalOcean (currently covered by $200 free credit through ~late April 2026).
+
+---
+
+## METHOD 2 — Upgrade: Mac Mini M4 + OBS + NDI
+
+### What Changes
+
+One dedicated machine — a Mac Mini M4 — runs OBS 24/7 and maintains a single unbroken RTMP stream to YouTube. It never stops. The lofi loop and the live stream are just **two scenes inside the same running OBS instance**. Switching between them is a Stream Deck button press. YouTube never sees a break.
+
+```
+Always-on stream:
+[Mac Mini: OBS 24/7]
+  Scene 1: HoldtLoop.mp4 (local media source)  ─────────┐
+  Scene 2: NDI ← Windows Laptop OBS (when live) ─────────┤
+                                                          ↓
+                                               [Restream] → [YouTube @EIWerner]
+                                                         ↘ [Twitch eiwerner]
+
+Switch: Stream Deck button → instant scene change → zero blip
+Laptop off? Scene 1 runs indefinitely. No SSH. No ritual. No blip.
+```
+
+### What NDI Is (Simply)
+
+NDI is a protocol that lets one computer send its video and audio to another computer over your local network — the same network everything in your apartment is connected to. Your Windows laptop runs OBS, captures your camera and mic, and broadcasts that as an NDI signal. The Mac Mini receives it as a source inside its own OBS, exactly like a webcam.
+
+**Requirements:**
+- Both machines on the same local network
+- Both connected via **wired ethernet** (gigabit) — WiFi cannot handle NDI's bandwidth (~100–150 Mbps)
+- A gigabit switch or router with wired ports (your GL.iNet GL-MT6000 handles this)
+
+**This only works at your home base.** At a café, your laptop and Mac Mini are on different networks — NDI doesn't work. For those sessions, you'd stream directly from your laptop as you do now.
+
+### What This Unlocks
+
+**Full OBS scene structure on the always-on machine.** Every scene you build — warmup, writing stream, gaming stream, cooldown, lofi radio — is available 24/7 via Stream Deck. The lofi loop is just one more OBS scene, not a separate system.
+
+**Full Stream Deck + control.** Every button on your Stream Deck can control the Mac Mini's OBS via WebSocket over your local network. Scene switching, transitions, audio levels, everything — all from the Stream Deck whether your laptop is on or off.
+
+**HTML browser sources work fully.** Your branded HTML overlays, countdown timers, the 28:07 warmup countdown — all run as browser sources inside Mac Mini OBS. Transparent overlays over your video, animated, branded, no third-party overlay service.
+
+**Laptop can be completely off.** The Mac Mini handles everything. You close the laptop, lofi runs. You open the laptop, start OBS, press a Stream Deck button — you're live. Press it again when done — back to lofi. Close the laptop.
+
+**No SSH. No PowerShell. No ritual.**
+
+### What It Requires to Set Up
+
+**Hardware needed:**
+- Mac Mini M4 base model (16GB RAM) — **$499 new**
+- Gigabit ethernet switch (if not already in apartment) — $15–20
+- 2× Cat6 ethernet cables (Mac Mini + laptop to switch) — $10
+
+**Software (all free):**
+- OBS Studio v31.1+ — free, open source
+- NDI Runtime v6.3+ — free, register at ndi.video
+- DistroAV plugin (formerly OBS-NDI) v6.1.1+ — free, open source
+- Install on **both** the Mac Mini and the Windows laptop
+
+**One-time setup steps:**
+
+| Step | Time |
+|---|---|
+| Install OBS + NDI Runtime + DistroAV on Mac Mini | 20 min |
+| Install NDI Runtime + DistroAV on Windows laptop | 15 min |
+| Configure Mac Mini OBS: Scene 1 (lofi media source) + Scene 2 (NDI input) | 30 min |
+| Configure laptop OBS: enable NDI output of full canvas | 15 min |
+| Set up YouTube Scheduled Stream (Auto-start ON, Auto-stop OFF) | 15 min |
+| Configure Stream Deck scene switching (WebSocket to Mac Mini OBS) | 15 min |
+| Wire both machines to gigabit switch via ethernet | 10 min |
+| Test NDI connection, verify Mac Mini sees laptop as source | 30–60 min |
+| First live test, verify YouTube stream health | 30 min |
+| 24-hour burn-in test (passive) | 24 hrs |
+| **Total active setup time** | **3–5 hours** |
+
+> ⚠️ macOS 15 (Sequoia) has a known bug where OBS won't discover NDI sources even with permissions granted. Fix: launch OBS from Terminal once, grant Terminal "Local Network" permission. One-time setup annoyance, not an ongoing issue.
+
+### YouTube Configuration (Critical)
+
+In YouTube Studio → Manage → Schedule Stream:
+- **Auto-start: ON** — stream begins the moment Mac Mini OBS connects
+- **Auto-stop: OFF** — YouTube does NOT end the stream on brief encoder disconnects
+- Encoder: H.264, CBR, 2-second keyframe interval, 4–8 Mbps
+- Use Scheduled Stream **always** — never the "Go Live" button (90% of 24/7 failures trace to the Go Live button)
+
+### Recurring Maintenance
+
+- **Weekly:** Restart OBS on Mac Mini (prevents audio drift and memory buildup after 72h+). Takes 10 seconds. Auto-start reconnects to YouTube automatically.
+- **Version pinning:** Disable auto-updates for OBS and NDI on Mac Mini after confirming everything works. An OBS update can break NDI compatibility overnight.
+- **Never on macOS:** No forced OS restarts. Windows would be the #1 risk here — Mac eliminates it entirely.
+
+### Ongoing Costs After Mac Mini Purchase
+
+| Item | Cost |
+|---|---|
+| OBS Studio | Free |
+| DistroAV (NDI plugin) | Free |
+| NDI Runtime + Tools | Free |
+| Restream Standard | ~$16/mo (already paying — no change) |
+| Electricity (Mac Mini M4) | ~$22/year |
+| DigitalOcean VPS (optional keepalive) | $6/mo |
+
+> The VPS doesn't have to go away. It can stay as a fallback — if the Mac Mini ever has a problem, SSH in, restart FFmpeg, lofi is back while you troubleshoot.
+
+### What Happens If Something Goes Wrong While Live
+
+| Scenario | What Viewers See | What You Do |
+|---|---|---|
+| Your internet drops briefly | Buffering spinner, stream resumes | Nothing — Speedify + dual-WAN handles it |
+| Your internet drops long enough for YouTube to end the event | Stream ends, becomes VOD | Restart the scheduled stream in YouTube Studio |
+| Your laptop OBS crashes mid-stream | Mac Mini shows black or frozen on Scene 2 | Switch Stream Deck to Scene 1 (lofi) — or it auto-shows fallback image |
+| Mac Mini OBS crashes | Stream ends entirely | Reopen OBS on Mac Mini — auto-reconnects to YouTube via Scheduled Stream |
+
+---
+
+## Side-by-Side Comparison
+
+| | VPS Method (Now) | Mac Mini Method (Upgrade) |
+|---|---|---|
+| Zero-blip switching | ❌ 30–60 sec gap | ✅ Instant |
+| Laptop can be off | ✅ Yes | ✅ Yes |
+| SSH ritual to go live | ❌ Required every time | ✅ Gone |
+| Full OBS scene control | ❌ No (FFmpeg only for lofi) | ✅ Yes |
+| Stream Deck control | ⚠️ Live scenes only | ✅ Everything including lofi |
+| HTML browser source overlays | ⚠️ Live scenes only | ✅ All scenes |
+| Auto-restart if connection drops | ⚠️ Needs shell loop fix | ✅ OBS + Scheduled Stream handles it |
+| Works from any location | ✅ VPS is cloud-based | ⚠️ LAN only (home base required) |
+| One-time cost | $0 | $499–$530 |
+| Monthly cost | $22/mo (VPS + Restream) | $16/mo (Restream only) |
+| Setup time | Already done | 3–5 hours + 24hr burn-in |
+
+---
+
+## Architecture Decision Log
+
+| Date | Decision | Reasoning |
+|---|---|---|
+| Mar 2, 2026 | VPS over OBS-always-on for 24/7 radio | Stream survives laptop downtime. Critical for Athens move. $6/mo. |
+| Mar 2, 2026 | 6fps animation speed | 24fps too fast, 12fps still too fast. 6fps matches lofi ambient feel. |
+| Mar 2, 2026 | Restream Standard over Free | Free plan has visible branding watermark. Standard removes it + supports 3 channels. |
+| Mar 2, 2026 | Deferred seamless handoff (nginx-rtmp) | VPS live and working. Brief blip acceptable. Revisit when streams are regular. |
+| Mar 2026 | Mac Mini M4 chosen over Windows mini PC | macOS no forced restarts. VideoToolbox hardware encode. Silent. $22/year electricity. |
+| Mar 2026 | Warmup/cooldown revised to 28:07 | 70:07 too long. 28:00 = 1680 seconds (divisible by 7). 28:07 carries septimal DNA visibly. |
+| Mar 2026 | LoFi Radio moves to @the_outside_inn | @EIWerner = scheduled streams, VODs, public content. Outside Inn = ambient community layer. |
+
+---
+
+## Stream Credits
+
+- **Original pixel art & animation:** Marwan Hasnaoui
+- **Original lo-fi composition:** Carson Thatcher
+- **© Outside Inn Studios, LLC. All rights reserved.**
+
+---
+
+*Outside Inn Studios | Living Document | innkeep@outsideinn.tv*
