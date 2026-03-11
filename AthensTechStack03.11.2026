@@ -1,1 +1,116 @@
+# Athens Tech Kit
+**Outside Inn Studios | Mar–May 2026 | Living Document**
 
+> Single reference for all hardware traveling to Athens. Optimized for Notion, GitHub, and AI project context. Update this file when anything changes.
+
+---
+
+## Carry-On Only — Cannot Be Checked
+
+| Item | Why |
+|---|---|
+| AERO X16 Laptop | Theft + damage risk in hold |
+| Anker 737 Power Bank (24,000mAh / 88.8Wh) | Lithium battery — banned from checked bags |
+| TalentCell Mini UPS (97.2Wh) | Lithium battery — banned from checked bags |
+| ELECOM NESTOUT Power Bank | Lithium battery — banned from checked bags |
+| SanDisk 2TB Extreme SSD | All stream source files live here |
+| Samsung T9 2TB SSD | Backup — irreplaceable data |
+| iPad | Chat monitor |
+| SanDisk 256GB microSD | GoPro card |
+
+> ⚠️ TalentCell is 97.2Wh — just under the 100Wh carry-on limit. Label confirms. Fine without approval.
+
+---
+
+## Streaming Stack
+
+| Item | Role |
+|---|---|
+| GL.iNet GL-MT6000 Router | Primary router — apartment WAN in, laptop LAN out |
+| AT&T Hotspot | 5G backup internet on WAN2 — needs Greek SIM (get at Athens airport) |
+| TalentCell Mini UPS | Keeps router alive during power flickers |
+| Anker 7-in-1 USB-C Hub | Primary streaming hub — PD charging + Yeti + spare USB-A |
+| Insignia USB-C Hub | Backup hub — HDMI + 2× USB-A + USB-C |
+| BENFEI USB-C to Ethernet Adapter | Backup ethernet path |
+| Ethernet cables | Wired laptop → router — always wired when streaming |
+
+---
+
+## Camera & Audio
+
+| Item | Role |
+|---|---|
+| Elgato Facecam MK.2 | Primary stream camera |
+| Blue Yeti Nano | Primary stream mic |
+| Elgato Key Light Neo | Key light — clips to monitor, WiFi controlled |
+| GoPro HERO13 Black | BTS / travel b-roll / IRL potential |
+| GoPro Official Selfie Stick (long) | Handheld b-roll + extended reach shots |
+| GoPro Tripod | Static shots + desk/table mounting |
+| Sony WH-1000XM5 | Monitoring + gaming + travel |
+
+---
+
+## Input & Control
+
+| Item | Role |
+|---|---|
+| Elgato Stream Deck + | Scene switching, audio control, go-live |
+| Razer Naga Mouse | Primary mouse — wired USB-A |
+
+---
+
+## Power & Adapters
+
+| Item | Role |
+|---|---|
+| Anker 100W GaN Charger (3-port) | Primary travel wall charger |
+| European Type C Adapters ×2 | US → EU plug (white + black) — correct for Greece |
+| Anker 737 Power Bank | Laptop backup + USB device power on the go |
+
+> ⚠️ Confirm all charger bricks say **Input: 100-240V** before plugging into Greek outlets (230V). GL-MT6000 power supply especially — check the barrel jack brick.
+
+---
+
+## Displays
+
+| Item | Role |
+|---|---|
+| ASUS ZenScreen 15.6" (MB16ACV) | Second monitor for writing, editing, productivity — not used during streams (conflicts with hub on USB-C) |
+
+---
+
+## Left Behind
+
+| Item | Reason |
+|---|---|
+| KLIM Cooling Pad | No thermal issues yet — easy to ship if needed |
+
+---
+
+## Pre-Flight Tasks
+
+### Critical (must complete before Mar 11)
+- [ ] VPS auto-restart — wrap FFmpeg in shell loop so it restarts automatically if Restream drops connection
+- [ ] Rebuild HoldtLoop.mp4 with `-g 12 -keyint_min 12` keyframe flags — fixes YouTube "Poor" stream health
+- [ ] Harden VPS — change root password, create non-root sudo user, SSH key auth, disable root login
+
+### On Arrival
+- [ ] Get Greek SIM for AT&T hotspot at Athens airport (Cosmote or Vodafone Greece)
+- [ ] Confirm GL-MT6000 power supply brick says Input: 100-240V
+- [ ] Test wired internet → router → laptop before first stream
+
+---
+
+## Notes for AI Context
+
+- **Primary streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070, 32GB DDR5, Windows 11)
+- **Stream method:** VPS + FFmpeg for 24/7 lo-fi loop → Restream → YouTube + Twitch. OBS on laptop for live streams.
+- **Internet:** Flatio apartment wired (195/19 Mbps confirmed) as WAN1. AT&T hotspot with Greek SIM as WAN2 failover via GL-MT6000.
+- **Power redundancy:** TalentCell UPS keeps router stack alive on power drops. Anker 737 keeps laptop running.
+- **Chat monitor:** iPad over WiFi — uses zero laptop ports.
+- **Mac Mini M4 upgrade:** Not yet purchased. Planned upgrade for seamless lofi ↔ live switching. Home-base only (LAN-dependent). Deferred until streaming cadence validated post-Athens.
+- **All stream source files** stored on SanDisk 2TB Extreme at `D:\StreamSourceFiles\`
+
+---
+
+*Outside Inn Studios | innkeep@outsideinn.tv*
