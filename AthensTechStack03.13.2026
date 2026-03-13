@@ -87,6 +87,66 @@
 
 ---
 
+## OBS & Streaming — Known Issues & Fixes
+
+> Learned March 2026. Root cause of all issues: AERO X16 display is 2560×1600 (16:10), OBS canvas is 1920×1080 (16:9). Aspect ratio mismatch causes black bars on all display captures. Every fix below traces back to this.
+
+### The Core Problem
+- **AERO X16 native display:** 2560×1600 — 16:10 aspect ratio
+- **OBS canvas:** 1920×1080 — 16:9 aspect ratio
+- Any capture of the full display will letterbox or pillarbox into the canvas
+- Fix differs by scene type — see below
+
+---
+
+### WoW Broadcast Scene
+
+**Problem:** WoW runs at 2560×1600 in Fullscreen (Windowed) mode, producing black bars on the left and right sides of the OBS canvas.
+
+**What doesn't work:**
+- Changing WoW resolution to 1920×1080 is blocked in Fullscreen (Windowed) — it matches desktop resolution only
+- Switching to true Fullscreen (which unlocks resolution options) breaks UI addon layouts
+
+**Fix in place:** Right-click WoW source in OBS → Transform → **Stretch to Screen**. Slight geometric distortion (16:10 → 16:9) but imperceptible in gameplay. Zero bars.
+
+**Better long-term fix:** Crop/Pad filter — 80px left, 80px right — crops to 16:9 without distortion. Needs testing to dial in exact values.
+
+**Camera:** Currently bottom-left. Bottom-right is cleaner — less overlap with WoW UI elements which cluster on the left.
+
+---
+
+### Notion Writing Scene
+
+**Problem:** Display Capture at 2560×1600 produces black bars top and bottom in the 1920×1080 canvas.
+
+**Fix in place (current):** Before streaming, drop Windows display resolution to 1920×1080 (right-click desktop → Display settings → Resolution). Use Display Capture. Change back to 2560×1600 after stream. Takes ~10 seconds each way.
+
+**Long-term fix:** Use ASUS ZenScreen (1920×1080, already in kit) as dedicated broadcast display. Notion lives on ZenScreen. OBS Display Captures ZenScreen. AERO display handles OBS, chat, controls. No resolution toggling ever. Blocked currently by USB-C port conflict with hub — resolve port situation first.
+
+**What was ruled out:**
+- FancyZones (PowerToys) — more overhead for same result as resolution toggle
+- Window Capture sized to 1920×1080 — requires FancyZones to constrain window, adds complexity
+
+---
+
+### Camera / USB
+
+- **Facecam MK.2** connects via USB-C on the camera end but ships with a USB-C to USB-A cable — plugs into any USB-A port. Does not require USB-C on the host side.
+- Port crunch on the AERO is a known issue. Anker 7-in-1 hub is the fix — confirm it's in the chain before every stream.
+
+---
+
+### ZenScreen Upgrade Path (When Port Situation Is Resolved)
+
+Once the USB-C port conflict is sorted, the ZenScreen becomes the broadcast display permanently:
+- Notion (and any other writing/reading content) lives on ZenScreen during writing segments
+- OBS Display Captures ZenScreen — always 1920×1080, always clean
+- AERO display handles everything else: OBS controls, chat, gaming
+- Game scenes use Game Capture (not display capture) — unaffected by display resolution entirely
+- No resolution toggling, no Stretch to Screen, no crop math — ever again
+
+---
+
 ## Pre-Flight Tasks
 
 ### Critical (must complete before Mar 11)
@@ -104,6 +164,7 @@
 ## Notes for AI Context
 
 - **Primary streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070, 32GB DDR5, Windows 11)
+- **Display:** 2560×1600 native (16:10) — mismatches OBS 1920×1080 canvas (16:9). All capture sources need individual fixes. See OBS section above.
 - **Stream method:** VPS + FFmpeg for 24/7 lo-fi loop → Restream → YouTube + Twitch. OBS on laptop for live streams.
 - **Internet:** Flatio apartment wired (195/19 Mbps confirmed) as WAN1. AT&T hotspot with Greek SIM as WAN2 failover via GL-MT6000.
 - **Power redundancy:** TalentCell UPS keeps router stack alive on power drops. Anker 737 keeps laptop running.
