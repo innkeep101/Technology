@@ -1,0 +1,235 @@
+# Outside Inn Radio — VPS Reference
+
+> How the 24/7 lo-fi radio works. Every command, every gotcha, everything you need to operate it.
+
+---
+
+## What It Is
+
+A DigitalOcean VPS loops a pre-rendered video file (HoldtLoop.mp4) via FFmpeg and pushes it to Restream via RTMP. Restream forwards to YouTube. The VPS runs independently of your laptop — it stays on while you sleep, travel, or shut down.
+
+```
+VPS (FFmpeg) → Restream → YouTube
+```
+
+The video is stream-copied (no re-encoding), so CPU usage is near zero. A $6/month server handles it.
+
+---
+
+## The Server
+
+| Field | Value |
+|---|---|
+| Provider | DigitalOcean |
+| OS | Ubuntu 24.04 |
+| Spec | 1 vCPU, 1GB RAM, 25GB disk |
+| Region | NYC3 |
+| Cost | $6/month |
+| IP | `138.197.9.139` |
+| Login | `ssh root@138.197.9.139` |
+| Session manager | tmux (keeps FFmpeg alive after you close the terminal) |
+
+---
+
+## The Video File
+
+**HoldtLoop.mp4** — lives at `/root/HoldtLoop.mp4` on the VPS.
+
+| Field | Value |
+|---|---|
+| Resolution | 1920×1080 |
+| Framerate | 6fps |
+| Codec | H.264 video + AAC audio |
+| Duration | ~1h40m (6000 seconds) |
+| Size | ~1.28GB |
+| Content | 480-frame pixel art animation looped over a lo-fi music track |
+
+When FFmpeg reaches the end of the file, `-stream_loop -1` restarts it seamlessly.
+
+### How It Was Built (locally, not on VPS)
+
+**Step 1 — PNGs to silent video:**
+```bash
+ffmpeg -framerate 6 -i "%d.png" -c:v libx264 -pix_fmt yuv420p holdt_6fps.mp4
+```
+480 PNG frames → 80-second silent video at 6fps.
+
+**Step 2 — Loop animation + add music:**
+```bash
+ffmpeg -stream_loop -1 -i holdt_6fps.mp4 -i LofiLoop.wav -map 0:v -map 1:a -c:v libx264 -g 12 -keyint_min 12 -c:a aac -t 6000 HoldtLoop.mp4
+```
+Loops the 80s animation ~75 times to fill the 1h40m music track. `-g 12 -keyint_min 12` sets 2-second keyframe intervals (YouTube requires ≤4s for "Good" stream health).
+
+**Step 3 — Upload to VPS:**
+```bash
+scp HoldtLoop.mp4 root@138.197.9.139:/root/
+```
+
+---
+
+## The RTMP Destination
+
+FFmpeg pushes to Restream's ingest URL. Restream forwards to YouTube (and optionally Twitch).
+
+```
+rtmp://live.restream.io/live/re_10860387_75ea120b5509c4a2572f
+```
+
+This is the Restream stream key. Both OBS and the VPS push to the same ingest point — Restream doesn't care which encoder is sending.
+
+---
+
+## Daily Operations
+
+### Start the radio
+
+```bash
+ssh root@138.197.9.139
+tmux attach -t stream
+```
+
+If the tmux session is gone:
+```bash
+tmux new -s stream
+```
+
+Then run:
+```bash
+ffmpeg -re -stream_loop -1 -i HoldtLoop.mp4 -c:v copy -c:a copy -f flv rtmp://live.restream.io/live/re_10860387_75ea120b5509c4a2572f
+```
+
+Wait for `time=` values to start scrolling. That confirms the stream is running. **Close the terminal window immediately.** Do not press any keys — accidental Ctrl+Z suspends FFmpeg.
+
+### Stop the radio
+
+```bash
+ssh root@138.197.9.139
+tmux attach -t stream
+```
+
+Press **Q**. FFmpeg exits. Done.
+
+### Check if it's running
+
+```bash
+ssh root@138.197.9.139
+tmux attach -t stream
+```
+
+If `time=` values are scrolling → it's running. Close the window.
+
+---
+
+## The Handoff (VPS ↔ OBS)
+
+YouTube/Restream accept one encoder at a time. When you go live from OBS, the VPS must stop first. When you sign off, restart it.
+
+### Going live from OBS
+
+1. SSH in → `tmux attach -t stream` → press **Q** (kills VPS stream)
+2. Close terminal
+3. Start streaming in OBS (OBS pushes to same Restream ingest)
+4. You're live
+
+### Returning to radio after stream
+
+1. Stop streaming in OBS
+2. SSH in → `tmux attach -t stream` (or `tmux new -s stream`)
+3. Run the FFmpeg command (see above)
+4. Wait for `time=` → close terminal
+5. Holdt's back
+
+**The gap:** There's ~30–60 seconds of dead air during each switch. YouTube viewers see nothing briefly. Accepted for now.
+
+---
+
+## Gotchas (Learned the Hard Way)
+
+### 1. Restream YouTube toggle defaults to OFF after reconnects
+
+After ANY channel reconnect in Restream (OAuth re-auth, stream key reset, removing/re-adding channel), the YouTube toggle in Restream → Channels defaults to **OFF**. Restream shows "Sending data..." but YouTube shows nothing.
+
+**Fix:** Go to Restream → Channels → click the toggle next to your YouTube channel to turn it ON.
+
+**Always check this after starting the radio.**
+
+### 2. YouTube Studio shows "No data" — that's normal
+
+YouTube Studio defaults to the "Default stream" dashboard, which always shows "No data" / "Connect your encoder." Restream creates its own stream entry via OAuth — it doesn't use the default key.
+
+**Fix:** In YouTube Studio → Go Live → click the dropdown at the top that says "Stream key: Default stream" → switch to the Restream-created stream. That's where your live data is.
+
+### 3. Never touch stream settings in YouTube Studio
+
+Restream owns the YouTube connection via OAuth. If you reset the stream key in YouTube Studio, it breaks Restream's connection. You'll have to remove and re-add the YouTube channel in Restream entirely.
+
+**Rule:** YouTube Studio is for monitoring only. Restream manages the connection.
+
+### 4. Don't press keys while FFmpeg is running
+
+Once `time=` is scrolling, close the terminal. Arrow keys and accidental Ctrl+Z will suspend or crash FFmpeg. tmux keeps the session alive regardless of whether your terminal is open.
+
+### 5. Keyframe interval matters
+
+The initial HoldtLoop.mp4 build omitted `-g 12 -keyint_min 12`, which produced ~41-second keyframe intervals. YouTube reported "Poor" stream health. The corrected build command (in the "How It Was Built" section above) includes these flags. At 6fps, `-g 12` = keyframe every 2 seconds, which YouTube considers "Good."
+
+### 6. `-re` flag is required for file-to-RTMP
+
+Without `-re`, FFmpeg reads the file as fast as disk allows and floods the RTMP server. `-re` throttles playback to 1× real-time. It's an input flag — must go before `-i`.
+
+### 7. FFmpeg will eventually die on its own
+
+Restream drops connections occasionally (maintenance, network issues). When it does, FFmpeg exits and the stream goes dark until you manually SSH in and restart. A systemd service or shell wrapper with auto-restart is the fix (not yet implemented as of March 2026).
+
+### 8. YouTube does NOT kill streams at 12 hours
+
+YouTube stops **archiving** (VOD) after 12 hours, but the live stream continues indefinitely. If you need the VOD, record locally. The stream itself won't be terminated.
+
+---
+
+## Command Quick Reference
+
+| Action | Command |
+|---|---|
+| SSH in | `ssh root@138.197.9.139` |
+| Attach to session | `tmux attach -t stream` |
+| New session (if gone) | `tmux new -s stream` |
+| Start radio | `ffmpeg -re -stream_loop -1 -i HoldtLoop.mp4 -c:v copy -c:a copy -f flv rtmp://live.restream.io/live/re_10860387_75ea120b5509c4a2572f` |
+| Stop radio | Press **Q** in tmux session |
+| Upload new video | `scp HoldtLoop.mp4 root@138.197.9.139:/root/` |
+| Check disk space | `df -h` |
+| Check running processes | `ps aux \| grep ffmpeg` |
+| Kill FFmpeg if stuck | `pkill ffmpeg` |
+
+---
+
+## Architecture Diagram
+
+```
+┌──────────────┐     RTMP      ┌───────────┐    Forward    ┌─────────┐
+│ VPS (FFmpeg) │───────────────→│ Restream  │──────────────→│ YouTube │
+│ $6/mo DO     │               │ Standard  │               │         │
+│ stream-copy  │               │ $16/mo    │               │         │
+└──────────────┘               └───────────┘               └─────────┘
+       ↕ (manual swap)              ↑
+┌──────────────┐     RTMP           │
+│ Laptop (OBS) │────────────────────┘
+│ Live streams  │  (same ingest point)
+└──────────────┘
+```
+
+Only one encoder streams at a time. Kill VPS → start OBS. Stop OBS → restart VPS.
+
+---
+
+## Monthly Cost
+
+| Item | Cost |
+|---|---|
+| DigitalOcean VPS | $6/mo |
+| Restream Standard | ~$16/mo (annual billing) |
+| **Total** | **~$22/mo** |
+
+---
+
+*Updated March 2026. All commands verified against live system.*
