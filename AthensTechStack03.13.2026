@@ -1,61 +1,137 @@
 # Athens Tech Kit
 **Outside Inn Studios | Mar–May 2026 | Living Document**
 
-> Single reference for all hardware traveling to Athens. Optimized for Notion, GitHub, and AI project context. Update this file when anything changes.
+> Single reference for all hardware in Athens. Optimized for Notion, GitHub, and AI project context. Update this file when anything changes.
 
 ---
 
-## Carry-On Only — Cannot Be Checked
+## Primary Machine
 
-| Item | Why |
+| Field | Value |
 |---|---|
-| AERO X16 Laptop | Theft + damage risk in hold |
-| Anker 737 Power Bank (24,000mAh / 88.8Wh) | Lithium battery — banned from checked bags |
-| TalentCell Mini UPS (97.2Wh) | Lithium battery — banned from checked bags |
-| ELECOM NESTOUT Power Bank | Lithium battery — banned from checked bags |
-| SanDisk 2TB Extreme SSD | All stream source files live here |
-| Samsung T9 2TB SSD | Backup — irreplaceable data |
-| iPad | Chat monitor |
-| SanDisk 256GB microSD | GoPro card |
+| **Device** | GIGABYTE AERO X16 1WH — OutsideInnHQ |
+| **CPU** | AMD Ryzen AI 7 350 (8c/16t, up to 5GHz) |
+| **GPU** | NVIDIA RTX 5070 Laptop (8GB GDDR7) — driver 595.79 WHQL |
+| **RAM** | 32GB DDR5 5600MHz — memory diagnostic clean ✅ |
+| **OS** | Windows 11 Home 64-bit |
+| **Display** | 16" IPS 2560×1600 165Hz (16:10) |
+| **Ports** | 1× USB4/USB-C (DP 1.4, PD 3.0), 1× HDMI 2.1, 2× USB-A 3.2, 1× USB-A 2.0, RJ45 |
 
-> ⚠️ TalentCell is 97.2Wh — just under the 100Wh carry-on limit. Label confirms. Fine without approval.
+> ⚠️ Only one USB-C port on device. Anker hub occupies it during streaming.
+> ⚠️ OBS canvas mismatch: laptop is 2560×1600 (16:10), OBS is 1920×1080 (16:9). Workaround: ZenScreen as broadcast display via DisplayLink, OR drop Windows res to 1920×1080 before streaming.
+> ⚠️ GiMATE must stay in **Optimus mode**. ECO mode disables the dGPU entirely — never use it.
 
 ---
 
-## Streaming Stack
+## Active Streaming Stack
 
-| Item | Role |
-|---|---|
-| GL.iNet GL-MT6000 Router | Primary router — apartment WAN in, laptop LAN out |
-| AT&T Hotspot | 5G backup internet on WAN2 — needs Greek SIM (get at Athens airport) |
-| TalentCell Mini UPS | Keeps router alive during power flickers |
-| Anker 7-in-1 USB-C Hub | Primary streaming hub — PD charging + Yeti + spare USB-A |
-| Insignia USB-C Hub | Backup hub — HDMI + 2× USB-A + USB-C |
-| BENFEI USB-C to Ethernet Adapter | Backup ethernet path |
-| Ethernet cables | Wired laptop → router — always wired when streaming |
-
----
-
-## Camera & Audio
-
-| Item | Role |
-|---|---|
-| Elgato Facecam MK.2 | Primary stream camera |
-| Blue Yeti Nano | Primary stream mic |
-| Elgato Key Light Neo | Key light — clips to monitor, WiFi controlled |
-| GoPro HERO13 Black | BTS / travel b-roll / IRL potential |
-| GoPro Official Selfie Stick (long) | Handheld b-roll + extended reach shots |
-| GoPro Tripod | Static shots + desk/table mounting |
-| Sony WH-1000XM5 | Monitoring + gaming + travel |
+| Item | Role | Status |
+|---|---|---|
+| **Anker 341 USB-C Hub (7-in-1)** | Primary hub — all peripherals route through here | ✅ Active |
+| **Ethernet cable** | Direct wired connection — laptop RJ45 → apartment router | ✅ Active |
+| **ASUS ZenScreen MB16ACV** | Dedicated broadcast display — 1920×1080 native, eliminates res mismatch | ✅ Active via DisplayLink |
+| **Elgato Facecam MK.2** | Primary stream camera — TheCatCamera in OBS | ✅ Active |
+| **Blue Yeti Nano** | Primary stream mic | ✅ Active |
+| **Elgato Key Light Neo** | Key light — WiFi controlled, clips to ZenScreen | ✅ Active |
+| **Elgato Stream Deck +** | Scene switching, audio control, go-live | ✅ Active |
+| **Razer Naga Mouse** | Primary mouse — wired USB-A | ✅ Active |
+| **iPad** | Chat monitor — WiFi only, uses zero laptop ports | ✅ Active |
+| **SanDisk 2TB Extreme SSD** | All stream source files at `D:\StreamSourceFiles\` | ✅ Active |
 
 ---
 
-## Input & Control
+## Available But Not Currently In Use
 
-| Item | Role |
+| Item | Role | Notes |
+|---|---|---|
+| **GL.iNet GL-MT6000 Router** | Primary router — WAN in, LAN out, WAN2 failover | Available — currently plugging ethernet directly |
+| **AT&T Hotspot + Greek SIM** | 5G backup internet via WAN2 on router | Available — not needed while direct ethernet is stable |
+| **TalentCell Mini UPS (97.2Wh)** | Keeps router alive on power drops | Available — not needed without router in use |
+| **BENFEI USB-C to Ethernet Adapter** | Backup ethernet path | Available — backup only |
+| **Insignia USB-C Hub** | Backup hub — HDMI + 2× USB-A + USB-C | Available — backup only |
+| **Anker 737 Power Bank (88.8Wh)** | Laptop backup power on the go | Available |
+| **ELECOM NESTOUT Power Bank** | Additional backup power | Available |
+| **GoPro HERO13 Black** | BTS / travel b-roll / IRL | Available |
+| **GoPro Official Selfie Stick** | Handheld b-roll | Available |
+| **GoPro Tripod** | Static shots | Available |
+| **Sony WH-1000XM5** | Monitoring + gaming + travel | Available |
+| **Samsung T9 2TB SSD** | Backup — irreplaceable data | Available |
+| **SanDisk 256GB microSD** | GoPro card | Available |
+| **iPad** | Chat monitor | Available |
+
+---
+
+## Internet
+
+| Field | Value |
 |---|---|
-| Elgato Stream Deck + | Scene switching, audio control, go-live |
-| Razer Naga Mouse | Primary mouse — wired USB-A |
+| **Primary** | Flatio apartment wired — 195/19 Mbps confirmed |
+| **Connection method** | Ethernet cable → laptop RJ45 port directly |
+| **Backup** | AT&T hotspot + Greek SIM (available, not active) |
+
+> Always wired when streaming. Never stream over WiFi.
+
+---
+
+## Hub Layout (Anker 341, during streams)
+
+| Hub Port | Connected Device | Cable |
+|---|---|---|
+| USB-C PD | Anker 100W GaN charger (wall) | USB-C to USB-C |
+| USB-A (3.0) | Elgato Facecam MK.2 | USB-C to USB-A 3.0 — **must be USB 3.0** for uncompressed 1080p60 |
+| USB-A (3.0) | Blue Yeti Nano | Micro-USB to USB-A — USB 2.0 sufficient |
+| USB-A (3.0) | ZenScreen MB16ACV | USB-C to USB-A — DisplayLink driver required |
+| USB-A (3.0) | Elgato Stream Deck + | USB-C to USB-A |
+
+> ⚠️ Hub does NOT support DP Alt Mode — ZenScreen must use USB-A + DisplayLink, not USB-C.
+> ⚠️ Hub HDMI is 4K@30Hz only and not currently in use.
+
+---
+
+## Cable Reference
+
+### Elgato Facecam MK.2
+| Field | Value |
+|---|---|
+| **Connector at camera** | USB-C |
+| **Connector at hub** | USB-A |
+| **Required standard** | USB 3.0 (5 Gbps) minimum — **non-negotiable for uncompressed output** |
+| **USB 2.0 behavior** | Falls back to MJPEG compressed — silent quality downgrade, no error shown |
+| **Included cable** | USB-C to USB-A, 2m, braided |
+| **Max safe length** | 3m (passive) |
+
+### ASUS ZenScreen MB16ACV
+| Field | Value |
+|---|---|
+| **Connector at monitor** | USB-C |
+| **Current connection method** | USB-C to USB-A → hub USB-A port → DisplayLink driver |
+| **Required standard** | USB 3.0 for DisplayLink mode |
+| **Driver required** | Yes — DisplayLink, already installed ✅ |
+| **Alternative (not currently used)** | USB-C direct to laptop USB-C port (DP Alt Mode, no driver needed) — takes only USB-C port |
+| **Included cables** | USB-C to USB-C (~1m) + USB-C to USB-A (~1m) |
+
+### Blue Yeti Nano
+| Field | Value |
+|---|---|
+| **Connector at mic** | **Micro-USB** (not Mini-USB — common mistake) |
+| **Connector at hub** | USB-A |
+| **Required standard** | USB 2.0 — fully sufficient for 24-bit/48kHz audio |
+| **Must be** | Data + charge cable — charge-only cables won't transmit audio |
+| **Included cable** | Micro-USB to USB-A, ~6ft, with ferrite choke |
+| **Max practical length** | ~3m before electrical noise risk |
+
+---
+
+## Display Setup
+
+| Item | Role | Connection |
+|---|---|---|
+| **AERO X16 built-in** (2560×1600) | OBS dashboard + monitoring | — |
+| **ASUS ZenScreen MB16ACV** (1920×1080) | Broadcast display — game + writing content | USB-C to USB-A → Anker hub → DisplayLink |
+
+**Camera placement:** Elgato Facecam MK.2 mounts on top of ZenScreen — maintains eye contact with viewers while gaming or writing.
+
+**OBS capture method:** Display Capture pointed at ZenScreen. Do NOT use Game Capture — it injects into WoW's DirectX pipeline and worsens GPU crashes.
 
 ---
 
@@ -63,115 +139,48 @@
 
 | Item | Role |
 |---|---|
-| Anker 100W GaN Charger (3-port) | Primary travel wall charger |
-| European Type C Adapters ×2 | US → EU plug (white + black) — correct for Greece |
-| Anker 737 Power Bank | Laptop backup + USB device power on the go |
+| **Anker 100W GaN Charger (3-port)** | Primary wall charger — feeds hub PD port at 100W |
+| **European Type C Adapters ×2** | US → EU plug — correct for Greece (230V) |
 
-> ⚠️ Confirm all charger bricks say **Input: 100-240V** before plugging into Greek outlets (230V). GL-MT6000 power supply especially — check the barrel jack brick.
+> ⚠️ All charger bricks confirmed Input: 100-240V — safe for Greek outlets.
 
 ---
 
-## Displays
+## WoW + OBS Fixes (Confirmed March 17, 2026)
 
-| Item | Role |
+| Issue | Fix | Status |
+|---|---|---|
+| WoW crash on transmog/Warband UI | `-d3d11` in Battle.net Additional Command Line Arguments | ✅ Fixed |
+| OBS Game Capture hooking into WoW DX pipeline | Switched to Window Capture, WoW in Borderless Windowed | ✅ Fixed |
+| Daily BSODs — `nvlddmkm.sys_Blackwell` | DDU clean install → NVIDIA 595.79 WHQL | ✅ Fixed |
+| GiMATE ECO mode disabling dGPU | Set to Optimus mode permanently | ✅ Fixed |
+| OBS resolution mismatch | ZenScreen as dedicated broadcast display (1920×1080 native) | ✅ Fixed |
+
+---
+
+## VPS / Lo-Fi Radio
+
+| Field | Value |
 |---|---|
-| ASUS ZenScreen 15.6" (MB16ACV) | Second monitor for writing, editing, productivity — not used during streams (conflicts with hub on USB-C) |
-
----
-
-## Left Behind
-
-| Item | Reason |
-|---|---|
-| KLIM Cooling Pad | No thermal issues yet — easy to ship if needed |
-
----
-
-## OBS & Streaming — Known Issues & Fixes
-
-> Learned March 2026. Root cause of all issues: AERO X16 display is 2560×1600 (16:10), OBS canvas is 1920×1080 (16:9). Aspect ratio mismatch causes black bars on all display captures. Every fix below traces back to this.
-
-### The Core Problem
-- **AERO X16 native display:** 2560×1600 — 16:10 aspect ratio
-- **OBS canvas:** 1920×1080 — 16:9 aspect ratio
-- Any capture of the full display will letterbox or pillarbox into the canvas
-- Fix differs by scene type — see below
-
----
-
-### WoW Broadcast Scene
-
-**Problem:** WoW runs at 2560×1600 in Fullscreen (Windowed) mode, producing black bars on the left and right sides of the OBS canvas.
-
-**What doesn't work:**
-- Changing WoW resolution to 1920×1080 is blocked in Fullscreen (Windowed) — it matches desktop resolution only
-- Switching to true Fullscreen (which unlocks resolution options) breaks UI addon layouts
-
-**Fix in place:** Right-click WoW source in OBS → Transform → **Stretch to Screen**. Slight geometric distortion (16:10 → 16:9) but imperceptible in gameplay. Zero bars.
-
-**Better long-term fix:** Crop/Pad filter — 80px left, 80px right — crops to 16:9 without distortion. Needs testing to dial in exact values.
-
-**Camera:** Currently bottom-left. Bottom-right is cleaner — less overlap with WoW UI elements which cluster on the left.
-
----
-
-### Notion Writing Scene
-
-**Problem:** Display Capture at 2560×1600 produces black bars top and bottom in the 1920×1080 canvas.
-
-**Fix in place (current):** Before streaming, drop Windows display resolution to 1920×1080 (right-click desktop → Display settings → Resolution). Use Display Capture. Change back to 2560×1600 after stream. Takes ~10 seconds each way.
-
-**Long-term fix:** Use ASUS ZenScreen (1920×1080, already in kit) as dedicated broadcast display. Notion lives on ZenScreen. OBS Display Captures ZenScreen. AERO display handles OBS, chat, controls. No resolution toggling ever. Blocked currently by USB-C port conflict with hub — resolve port situation first.
-
-**What was ruled out:**
-- FancyZones (PowerToys) — more overhead for same result as resolution toggle
-- Window Capture sized to 1920×1080 — requires FancyZones to constrain window, adds complexity
-
----
-
-### Camera / USB
-
-- **Facecam MK.2** connects via USB-C on the camera end but ships with a USB-C to USB-A cable — plugs into any USB-A port. Does not require USB-C on the host side.
-- Port crunch on the AERO is a known issue. Anker 7-in-1 hub is the fix — confirm it's in the chain before every stream.
-
----
-
-### ZenScreen Upgrade Path (When Port Situation Is Resolved)
-
-Once the USB-C port conflict is sorted, the ZenScreen becomes the broadcast display permanently:
-- Notion (and any other writing/reading content) lives on ZenScreen during writing segments
-- OBS Display Captures ZenScreen — always 1920×1080, always clean
-- AERO display handles everything else: OBS controls, chat, gaming
-- Game scenes use Game Capture (not display capture) — unaffected by display resolution entirely
-- No resolution toggling, no Stretch to Screen, no crop math — ever again
-
----
-
-## Pre-Flight Tasks
-
-### Critical (must complete before Mar 11)
-- [ ] VPS auto-restart — wrap FFmpeg in shell loop so it restarts automatically if Restream drops connection
-- [ ] Rebuild HoldtLoop.mp4 with `-g 12 -keyint_min 12` keyframe flags — fixes YouTube "Poor" stream health
-- [ ] Harden VPS — change root password, create non-root sudo user, SSH key auth, disable root login
-
-### On Arrival
-- [ ] Get Greek SIM for AT&T hotspot at Athens airport (Cosmote or Vodafone Greece)
-- [ ] Confirm GL-MT6000 power supply brick says Input: 100-240V
-- [ ] Test wired internet → router → laptop before first stream
+| **Provider** | DigitalOcean (Ubuntu, 1GB RAM) |
+| **Function** | FFmpeg looping `HoldtLoop.mp4` → Restream → YouTube 24/7 |
+| **Known issue** | No auto-restart loop — if Restream drops connection, FFmpeg dies |
+| **Priority** | High — implement shell loop wrapper before next long absence |
 
 ---
 
 ## Notes for AI Context
 
-- **Primary streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070, 32GB DDR5, Windows 11)
-- **Display:** 2560×1600 native (16:10) — mismatches OBS 1920×1080 canvas (16:9). All capture sources need individual fixes. See OBS section above.
-- **Stream method:** VPS + FFmpeg for 24/7 lo-fi loop → Restream → YouTube + Twitch. OBS on laptop for live streams.
-- **Internet:** Flatio apartment wired (195/19 Mbps confirmed) as WAN1. AT&T hotspot with Greek SIM as WAN2 failover via GL-MT6000.
-- **Power redundancy:** TalentCell UPS keeps router stack alive on power drops. Anker 737 keeps laptop running.
-- **Chat monitor:** iPad over WiFi — uses zero laptop ports.
-- **Mac Mini M4 upgrade:** Not yet purchased. Planned upgrade for seamless lofi ↔ live switching. Home-base only (LAN-dependent). Deferred until streaming cadence validated post-Athens.
-- **All stream source files** stored on SanDisk 2TB Extreme at `D:\StreamSourceFiles\`
+- **Streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070, 32GB DDR5, Windows 11)
+- **Live streams:** OBS on laptop → **YouTube (@EIWerner) directly** — no Restream. Confirmed March 17, 2026 via OBS stream settings (YouTube - RTMPS, E.I. Werner account).
+- **Twitch:** Not active yet — planned to add in ~1-2 months. Will require Restream or OBS multistream when ready.
+- **Lo-fi radio:** DigitalOcean VPS → Restream → YouTube (24/7, no auto-restart yet) — Restream only used here currently
+- **Internet:** Direct ethernet to apartment router. 195/19 Mbps confirmed.
+- **Router stack:** GL-MT6000 + TalentCell UPS + hotspot available but not currently in use
+- **Chat monitor:** iPad over WiFi — uses zero laptop ports
+- **All stream source files:** SanDisk 2TB Extreme SSD at `D:\StreamSourceFiles\`
+- **Mac Mini M4 upgrade (~$499):** Deferred — planned for post-Athens once streaming cadence is validated
 
 ---
 
-*Outside Inn Studios | innkeep@outsideinn.tv*
+*Outside Inn Studios | innkeep@outsideinn.tv | Living Document — update when anything changes*
