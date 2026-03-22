@@ -1,0 +1,617 @@
+# Fourthwall + Streaming Stack
+**Outside Inn Studios | Mar–May 2026 | Living Document**
+
+> Single reference for Fourthwall platform, StreamElements integration, and creator commerce ops. Optimized for Claude/Cursor AI project context. Update when anything changes.
+
+```
+PRIMARY DOCS   https://docs.fourthwall.com/llms-full.txt   (~592KB — complete docs)
+INDEX          https://docs.fourthwall.com/llms.txt         (~45KB — compact index)
+MCP SERVER     https://docs.fourthwall.com/mcp
+OPENAPI SPEC   https://docs.fourthwall.com/open-api-docs/open-api.json
+```
+
+---
+
+## CONSTRAINTS & TRUST LEVELS
+
+> `✓` = verified from primary source. `⚠️` = assumption or secondary source — verify before acting.
+
+| # | Item | Status |
+|---|---|---|
+| C1 | Open API is in **beta** | ⚠️ Monitor for breaking changes |
+| C2 | Platform OAuth is **invite-only** | ✓ Use Basic Auth for all single-shop automation |
+| C3 | API base URL is `https://api.fourthwall.com` | ✓ (not `openapi.fourthwall.com`) |
+| C4 | API path versioning is **inconsistent** | ⚠️ Auth guide: `/v1/` · Shop spec: `/v1.0/` · Memberships: `/v1.1/` — verify each path |
+| C5 | Webhook signature header is `X-Fourthwall-Hmac-SHA256` | ✓ (not `X-Fourthwall-Signature` — silently fails) |
+| C6 | Webhook delivery is **at-least-once** | ✓ Deduplicate on event `id` field |
+| C7 | Webhook ordering is **not guaranteed** | ✓ `ORDER_UPDATED` may arrive before `ORDER_PLACED` |
+| C8 | Webhook delivery is **not guaranteed** | ✓ Reconcile with Platform API polling for consistency |
+| C9 | `state` param on Posts endpoint is **required** | ✓ Missing = 400. Must pass `Published`, `Scheduled`, or `All` |
+| C10 | Subscription webhook names differ across docs | ⚠️ Older: `SUBSCRIPTION_CREATED/DELETED` · Current: `SUBSCRIPTION_PURCHASED/EXPIRED` — treat as equivalent |
+| C11 | Twitch Gifting webhooks are **beta** | ⚠️ Require StreamElements + separate Gifting App setup |
+| C12 | Fee and economics data | ⚠️ Verify at fourthwall.com before financial decisions |
+| C13 | Merch product specs | ⚠️ Verify dimensions at help.fourthwall.com before production |
+
+---
+
+## 1. PLATFORM OVERVIEW
+
+Fourthwall is a creator commerce and membership platform. Single branded storefront at a custom domain. Acts as **Merchant of Record** — collects and remits sales tax globally.
+
+```
+COVERS      Merch · Memberships · Donations · Digital products · Sales channels
+IS NOT      Discovery platform · Per-creation billing model
+PRO PLAN    $19/mo — removes 5% fee on digital products only
+```
+
+Core fees `⚠️ C12`:
+
+| Component | Free Plan | Pro ($19/mo) |
+|---|---|---|
+| Memberships | 5% | 5% |
+| Digital products | 5% | 0% |
+| Physical products | 0% | 0% |
+| CC processing | 2.9% + $0.30 | same |
+| PayPal | 3.49% + $0.49 | same |
+
+---
+
+## 2. AUTHENTICATION
+
+For single-shop automation: **Basic Auth only**. OAuth is invite-only and not needed.
+
+### Basic Auth (API Key) `✓`
+
+```
+WHERE    https://my-shop.fourthwall.com/admin/dashboard/settings/for-developers
+ROLE     SUPER ADMIN required (shop owner = SUPER ADMIN by default)
+```
+
+```bash
+curl -u "your_username:your_password" \
+  https://api.fourthwall.com/open-api/v1.0/shops/current
+```
+
+```javascript
+const base64 = btoa("your_username:your_password");
+fetch("https://api.fourthwall.com/open-api/v1.0/shops/current", {
+  headers: { "Authorization": `Basic ${base64}` }
+});
+```
+
+### Storefront Token (read-only public data)
+
+```
+FORMAT    ptkn_xxxxxxxxxxxxxxxxxx
+PASSED AS ?storefront_token=YOUR_TOKEN  (query param)
+SCOPE     Public product data only. Safe for client-side use.
+```
+
+---
+
+## 3. API SURFACE
+
+```
+RATE LIMIT    100 requests / 10-second rolling window
+BEHAVIOR      Excess requests DELAYED, not rejected (no 429)
+```
+
+| API | Base URL | Auth | Prefix |
+|---|---|---|---|
+| Platform | `https://api.fourthwall.com` | Basic Auth | `/open-api/v1.0/` |
+| Memberships | `https://api.fourthwall.com` | Basic Auth | `/open-api/v1.1/memberships/` |
+| Storefront | `https://storefront-api.fourthwall.com` | Storefront token | `/v1/` |
+
+### Key Platform Endpoints
+
+```
+GET    /open-api/v1.0/shops/current            ✓
+GET    /open-api/v1.0/orders
+GET    /open-api/v1.0/orders/{id}
+GET    /open-api/v1.0/products
+GET    /open-api/v1.0/supporters
+GET    /open-api/v1.0/subscriptions
+POST   /open-api/v1.0/webhooks                 ✓
+GET    /open-api/v1.0/webhooks
+PUT    /open-api/v1.0/webhooks/{id}
+DELETE /open-api/v1.0/webhooks/{id}
+```
+
+### Key Storefront Endpoints
+
+```
+Base: https://storefront-api.fourthwall.com/v1
+Auth: ?storefront_token=TOKEN on every request
+
+GET  /v1/collections/all/products    ← no list-all endpoint — use 'all' collection
+GET  /v1/products/{product_slug}
+POST /v1/carts                       body: { "currency": "USD" }
+POST /v1/carts/{cart_id}/items       body: { "variantId": "...", "quantity": 1 }
+GET  /v1/carts/{cart_id}
+```
+
+Checkout redirect: `https://{shop}.fourthwall.com/checkout/?cartCurrency=USD&cartId={cart_id}`
+
+Cart uses `variantId` (not product ID). Payments cannot go through API — always redirect to hosted checkout.
+
+### Memberships Posts Endpoint `✓`
+
+```
+GET /open-api/v1.1/memberships/posts
+
+Required: state = Published | Scheduled | All   (see C9)
+Optional: page · limit · search_query · types[] · tags_ids[]
+```
+
+Access control object on every post:
+```json
+{
+  "access": {
+    "type": "Public | FreeMembers | FreeAndPaidMembers | MembersOnly | Plans",
+    "tiers": [{ "id": 123 }]
+  }
+}
+```
+
+---
+
+## 4. WEBHOOKS
+
+The highest-value integration surface. All stream alerts and CRM updates flow from here.
+
+### Setup
+
+Dashboard: Settings → For Developers → Webhooks → Add URL → Select events
+
+```bash
+curl -u "user:pass" -X POST "https://api.fourthwall.com/open-api/v1.0/webhooks" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-server.com/hook", "allowedTypes": ["ORDER_PLACED"]}'
+```
+
+Store the `secret` from the response — it's only shown once.
+
+### Event Envelope
+
+```json
+{
+  "testMode": false,
+  "id": "weve_geAva6c1RAuyb9HQxbSlmA",
+  "type": "ORDER_PLACED",
+  "createdAt": "2023-07-12T15:05:11.078089+00:00",
+  "data": {}
+}
+```
+
+`id` = dedup key · `testMode` = filter test events · `type` = determines `data` shape
+
+### Event Types
+
+| Event | Trigger |
+|---|---|
+| `ORDER_PLACED` | Any store purchase |
+| `ORDER_UPDATED` | Order status change |
+| `GIFT_PURCHASE` | Gift order placed |
+| `DONATION` | One-time donation |
+| `SUBSCRIPTION_PURCHASED` | New membership |
+| `SUBSCRIPTION_CHANGED` | Tier change |
+| `SUBSCRIPTION_EXPIRED` | Cancelled or lapsed |
+| `THANK_YOU_SENT` | Thank-you message sent |
+| `NEWSLETTER_SUBSCRIBED` | Mailing list signup |
+| `GIFT_DRAW_STARTED` | Twitch gift draw opened `⚠️ C11` |
+| `GIFT_DRAW_ENDED` | Twitch gift draw completed `⚠️ C11` |
+
+### Signature Verification `✓`
+
+```
+HEADER    X-Fourthwall-Hmac-SHA256   ← exact name required
+ALGORITHM HMAC-SHA256(secret, raw_body) → base64 → compare
+```
+
+```python
+import hmac, hashlib, base64
+
+def verify(data: bytes, header: str, secret: str) -> bool:
+    digest = hmac.new(secret.encode(), data, hashlib.sha256).digest()
+    return hmac.compare_digest(base64.b64encode(digest), header.encode())
+```
+
+### Delivery Policy `✓`
+
+```
+RESPONSE    Return 200 OK immediately — do heavy work async
+TIMEOUT     2000ms max before marked failed
+RETRY       5 attempts · 5-second timeout per attempt
+ORDERING    Not guaranteed
+DELIVERY    At-least-once — deduplicate on event id
+TESTING     Dashboard → Webhooks → "Send test notification" → fires with testMode: true
+```
+
+### Active Webhook Flows (OIS Setup)
+
+```
+SUBSCRIPTION_PURCHASED
+  → Verify X-Fourthwall-Hmac-SHA256
+  → StreamElements: fire membership alert
+  → Discord: post welcome embed to tier channel + assign role
+
+SUBSCRIPTION_EXPIRED
+  → Discord: remove tier role
+  → CRM: update status → lapsed
+
+ORDER_PLACED
+  → StreamElements: fire merch purchase alert
+  → CRM: log to fulfillment tracker
+
+DONATION
+  → StreamElements: fire donation alert
+  → Log to revenue tracker
+```
+
+---
+
+## 5. STREAMELEMENTS INTEGRATION `✓`
+
+**Primary alert tool for OIS streams.**
+
+### Connect
+
+Dashboard → Apps → Alerts → StreamElements → Connect → Authorize
+
+### Configure in StreamElements
+
+1. StreamElements dashboard → Streaming Tools → My Overlays → select overlay
+2. Click `+` → Alerts → AlertBox
+3. **Fourthwall sends alerts via the Purchase alert event type** — confirm this is enabled
+4. Click Settings gear to configure appearance
+
+Tips:
+- Enable text-to-speech; disable "Announce action" for cleaner audio
+- To show product/membership images: Purchase Alert Settings → Override Graphics → First Item's Image
+- Multiple items: StreamElements defaults to showing the most expensive one
+
+### Alert Variables
+
+```
+{name}     Supporter name
+{items}    Product(s) purchased
+{currency} Currency symbol
+{amount}   Amount paid
+```
+
+### Purchase alert message template
+```
+{name} purchased {items} and spent {currency}{amount}!
+```
+
+### Membership alert (free/gifted — $0 value trick) `✓`
+
+Memberships send a `-1` amount value. Create a separate alert variation:
+
+1. Create new Purchase alert variation
+2. Set Variation Parameter: amount
+3. Set Condition: matches exactly `-1`
+4. Use message:
+```
+{name} joined the membership!
+```
+
+This cleanly separates paid merch alerts from membership alerts.
+
+### Test your alerts `✓`
+
+1. Create a test digital product in Fourthwall — set price to $0
+2. Check out normally with a name and message (to test TTS)
+3. Wait ~30 seconds — alert fires in overlay
+4. For membership alert: use "Send test notification" in Dashboard → Webhooks
+
+---
+
+## 6. MEMBERSHIPS — SYSTEM MODEL
+
+### Core Components
+
+**Tiers** — pricing levels. At minimum one tier required to launch. Define: price, billing cadence, perks, trial options.
+
+**Perks** — actual reasons someone joins:
+- Custom perk (most flexible — promises, entitlements, AMAs, VIP)
+- Discord role assignment
+- Members-only discounts
+- Members-only products
+- Private audio RSS feed
+
+**Free tier** — set price to $0. All free accounts auto-assigned. Supports custom perks only — no Discord or advanced perks.
+
+**Member lifecycle states:**
+```
+Free account · Free tier member · Free trial member
+Paid active member · Expiring member · Former member
+```
+
+### Discord Perk Setup `✓`
+
+```
+1. Create roles in Discord server
+2. Dashboard → Apps → Discord → Connect
+3. Assign Discord perk to each tier
+4. Fourthwall bot joins server — must retain permission to manage assigned roles
+5. Members authenticate at /supporters/perks
+6. Bot assigns role automatically
+```
+
+> ⚠️ If Fourthwall bot loses role-management permission, the entire system breaks silently.
+
+### Discounts & Promos
+
+- **7-day free trial** — first-time members only; former members cannot reuse
+- **Intro pricing** — automatic for launch period, first billing period only
+- **Promo codes** — Promotions → Create promotion → Membership promo
+- **Twitch subscriber discounts** — max 80% off; reverts if sub lapses
+- **Limitation:** discounts only apply to one billing period
+
+### Direct Messages & Locked Messages (PPV)
+
+**DMs** — one-to-one. Target: all members, selected tiers, expiring/former members, free accounts. Enable: Memberships → Settings → Messages.
+
+**Tips in DMs** — configure minimum ($1–$100) to reduce spam.
+
+**Locked messages** — PPV DMs. Price: $1–$100. Former members can unlock but cannot reply without rejoining. Audio/video processing up to 1 hour. Edit/delete after sending not supported.
+
+### Annual Subscriptions
+
+Enable: Memberships → Settings → General. Improves cash flow and retention. Fourthwall auto-calculates yearly total.
+
+### Membership Badges
+
+**Streak badge** — default, duration-based. "New member" → "X-month member." Customize per streak length.
+
+**Custom badges** — define by tier, comments, likes given/received, or manual. Text, icon, border/bg/text colors configurable. Custom icon upload not yet supported.
+
+### Mobile App (PWA)
+
+Auto-available when Memberships is enabled. Not on App Store/Google Play — install via browser.
+
+Push notifications: Android + iOS 16.4+. No background video playback, no PiP, tablets not supported.
+
+### Known Limitations
+
+- Custom badge icon upload not yet supported
+- Edit/delete for sent DMs/locked messages not supported
+- Multi-month/multi-year discounts not supported
+- Promo usage caps not yet available
+- Free tiers support custom perks only
+- Mobile app cannot be disabled in self-serve settings
+
+---
+
+## 7. EMAIL & NEWSLETTER
+
+Fourthwall does **not** send newsletter emails natively. Options:
+
+| Tool | Integration type | Notes |
+|---|---|---|
+| Klaviyo | Native sync | Full transactional + campaigns |
+| Mailchimp | Native sync | Standard email marketing |
+| beehiiv | Native sync | Newsletter-focused |
+| Kite | Native sync | — |
+| Laylo | Native sync | — |
+| Zapier | No-code | Works with any tool |
+
+Once connected, new contacts sync automatically. Older contacts: download CSV from Settings → General → Email marketing → export.
+
+**What Fourthwall does send automatically (non-customizable without integration):**
+- Order confirmations
+- Shipping notifications
+- Abandoned cart reminders
+- Thank-you emails (cannot be customized or disabled)
+
+---
+
+## 8. PLATFORM INTEGRATIONS — WHAT'S ACTUALLY POSSIBLE
+
+| Platform | Status | Notes |
+|---|---|---|
+| **StreamElements** | ✓ Native | Apps → Alerts |
+| **Streamlabs** | ✓ Native | Uses "Tips" event type (renamed from Donations) |
+| **Discord** | ✓ Native | Apps → Discord |
+| **YouTube Product Shelf** | ✓ Native | Products surfaced on channel page |
+| **TikTok Shop** | ✓ Native | — |
+| **Printful** | ✓ Native | Auto-fulfillment; to migrate existing designs, submit request form |
+| **Zapier** | ✓ No-code | 12 triggers, 4 actions |
+| **WordPress / Wix / Hostinger** | ⚠️ Link-out only | No plugin; use "Buy Now" links or per-page iframe embeds. Full cart/checkout always redirects to Fourthwall |
+| **Shopify** | ✗ No integration | Migrate fully or link out only |
+| **Printify** | ✗ Not supported | No native integration |
+
+> Fourthwall is its own full platform — no deep embedding in third-party CMSes. Linking out is the recommended pattern.
+
+---
+
+## 9. MERCH & PRODUCT SPECS `⚠️ C13`
+
+### Upload Requirements
+
+```
+Format         PNG preferred · JPEG accepted
+               PNG required for any product needing transparency
+Resolution     300 DPI recommended · 200 DPI minimum for DTG garments
+Upload size    ~25 MB max per file
+Transparency   Full alpha only — no semi-transparent edges or fade effects
+Color          Work in RGB. Export CMYK only for print. Exception: poster/inkjet = stay sRGB
+Sublimation    Colors print darker/less saturated — push brightness and saturation +10–15%
+```
+
+### Master Canvas Strategy
+
+```
+Minimum:  13,500px on long edge at 300 PPI
+Ideal:    15,000 × 9,000px at 300 PPI (landscape)
+Format:   PSD or TIFF, layered, RGB
+Profile:  sRGB IEC61966-2.1 or Display P3
+```
+
+Three derived crops:
+```
+Landscape  ~15,000 × 9,000px  (desk mats, banners, gaming pads)
+Square     ~9,000 × 9,000px   (10×10 prints, coasters)
+Portrait   ~7,200 × 10,800px  (18×24 posters)
+```
+
+### Product Pixel Dimensions
+
+**Desk Mats (Sublimation/Spoke):**
+
+| Size | Print Area | Pixels @ 300 DPI |
+|---|---|---|
+| Small | 12 × 18″ | 3,600 × 5,400 |
+| Medium | 12 × 22″ | 3,600 × 6,600 |
+| Large | 15.5 × 31.5″ | 4,650 × 9,450 |
+
+**Mouse Pads (Sublimation/Printful):**
+
+| Size | Print Area | Pixels @ 300 DPI |
+|---|---|---|
+| Classic | 8.7 × 7.1″ | 2,610 × 2,130 |
+| Gaming Medium | 18 × 16″ | 5,400 × 4,800 |
+| Gaming Large | 36 × 18″ | 10,800 × 5,400 |
+
+**Coasters & Posters (Printful):**
+
+| Product | Print Area | Pixels @ 300 DPI |
+|---|---|---|
+| Coaster | 3.74 × 3.74″ | 1,122 × 1,122 |
+| Poster 10×10 | 10 × 10″ | 3,000 × 3,000 |
+| Poster 18×24 | 18 × 24″ | 5,400 × 7,200 |
+| Poster 24×36 | 24 × 36″ | 7,200 × 10,800 |
+
+### Print Methods
+
+| Method | Products | Color note |
+|---|---|---|
+| Sublimation | Desk mats, mouse pads, coasters | Push +10–15% brightness/saturation |
+| Digital inkjet / giclée | Posters, art prints | Most accurate — stay in sRGB |
+| DTG | T-shirts, lightweight apparel | Min 200 DPI · PNG transparent bg |
+| DTFx | Hoodies, heavyweight | Brighter than DTG · avoid large solid fills |
+| Screen printing | MOQ only | No gradients — solid shapes only |
+| Embroidery | Accessories | Max 5–6 thread colors · min line 0.05″ · no gradients |
+
+### OBS Overlay Specs
+
+```
+Canvas      1920 × 1080px — match OBS Base Canvas Resolution exactly
+Format      PNG-32 (RGBA) — PNG-8 unsupported for anti-aliased elements
+Color       sRGB IEC61966-2.1 — OBS does no color management/ICC conversion
+Performance Static PNG overlays have negligible GPU impact once loaded
+Strategy    Separate elements into individual PNGs for Stream Deck toggling
+```
+
+### Digital Platform Assets
+
+**YouTube:**
+
+| Asset | Dimensions | Notes |
+|---|---|---|
+| Banner upload | 2560 × 1440px | Full canvas for TV display |
+| Banner safe zone | 1546 × 423px | All critical content here |
+| Profile picture | 800 × 800px | Displayed as circle |
+| Thumbnail | 1280 × 720px | Max 2 MB |
+
+**Twitch / Discord:**
+
+| Platform | Asset | Dimensions |
+|---|---|---|
+| Twitch | Banner | 1200 × 480px (1920 × 480 retina) |
+| Twitch | Profile picture | 800 × 800px (circle) |
+| Twitch | Offline screen | 1920 × 1080px |
+| Discord | Server banner | 960 × 540px |
+| Discord | Server icon | 512 × 512px (circle) |
+
+### File Naming Convention
+
+`[ArtworkTitle]_[ProductType]_[Dimensions]_[ColorMode]_v[##].png`
+
+```
+MoonlitForest_DeskMat_15x31_CMYK_v01.png
+MoonlitForest_Poster_10x10_sRGB_v01.png
+MoonlitForest_YTBanner_2560x1440_sRGB_v01.png
+MoonlitForest_Master_15000x9000_RGB.psd
+```
+
+### Delivery Folder Structure
+
+```
+ProjectName/
+├── Source/      (master PSD/TIFF, layered, RGB)
+├── Print/       (flattened, CMYK where needed, per product)
+├── Digital/     (sRGB, web-optimized, social crops)
+├── Overlays/    (1920×1080 PNG-32, sRGB, transparent)
+└── Reference/   (mockups, crop guides, notes)
+```
+
+---
+
+## 10. AI / LLM TOOLING `✓`
+
+| File | Size | Use |
+|---|---|---|
+| `https://docs.fourthwall.com/llms.txt` | ~45KB | Compact index — start here |
+| `https://docs.fourthwall.com/llms-full.txt` | ~592KB | Complete docs — use as code gen context |
+
+**MCP Server:** `https://docs.fourthwall.com/mcp`
+
+Claude Desktop: Settings → Connectors → Add custom connector → Name: `Fourthwall Docs` → URL above
+
+---
+
+## 11. LAUNCH CHECKLIST
+
+### Memberships Minimum Viable Launch
+
+- [ ] 1 paid tier created with 1–3 clear perks
+- [ ] Welcome post created
+- [ ] 1 public post live
+- [ ] Memberships added to homepage and menu
+- [ ] Annual plan enabled
+- [ ] Launch discount or promo code ready
+- [ ] Discord perk configured (bot has role-management permission)
+- [ ] Member-only product or discount configured
+
+### Streaming Integration
+
+- [ ] Webhook endpoint deployed and tested
+- [ ] Signature verification live (`X-Fourthwall-Hmac-SHA256`)
+- [ ] Test event fired from Dashboard → Webhooks → Send test notification
+- [ ] StreamElements connected (Apps → Alerts → StreamElements)
+- [ ] Purchase alert fires for `ORDER_PLACED` and `DONATION`
+- [ ] Membership variation alert configured with `-1` amount condition
+- [ ] Discord native integration enabled or custom bot handling role assignment
+
+### Merch Production
+
+- [ ] Master canvas at 15,000 × 9,000px, 300 PPI, RGB
+- [ ] Sublimation colors pushed +10–15% brightness/saturation
+- [ ] Files named per convention
+- [ ] Layered source file preserved in Source/
+
+---
+
+## 12. SOURCE REFERENCE
+
+| URL | Trust | Notes |
+|---|---|---|
+| https://docs.fourthwall.com/llms-full.txt | ✓ | Complete docs ~592KB |
+| https://docs.fourthwall.com/llms.txt | ✓ | Compact index ~45KB |
+| https://docs.fourthwall.com/mcp | ✓ | Native MCP server |
+| https://docs.fourthwall.com/guides/authentication | ✓ | Basic Auth guide |
+| https://docs.fourthwall.com/guides/rate-limiting | ✓ | 100 req/10-sec |
+| https://docs.fourthwall.com/webhooks/signature-verification | ✓ | Correct header name |
+| https://docs.fourthwall.com/webhooks/retry-policies | ✓ | 5 attempts, 2000ms |
+| https://docs.fourthwall.com/webhooks/gifting-guide | ✓ | Beta gifting flow |
+| https://docs.fourthwall.com/open-api-docs/open-api.json | ✓ | Full Platform API spec |
+| https://docs.fourthwall.com/open-api-docs/storefront.json | ✓ | Full Storefront spec |
+| https://discord.com/invite/kc6P68z3Uz | ✓ | Developer Discord |
+| https://help.fourthwall.com | — | Help center |
+
+---
+
+*Outside Inn Studios | innkeep@outsideinn.tv | Living Document — update when anything changes*
+*Sources: Fourthwall live OpenAPI specs · Fourthwall docs · Fourthwall Help Center · StreamElements integration guide*
