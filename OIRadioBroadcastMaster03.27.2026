@@ -1,0 +1,481 @@
+# Outside Inn Radio — Master Setup Guide
+**Outside Inn Studios | March 2026 | Personal AI Project Reference**
+
+> Full documentation of how the Outside Inn 24/7 lo-fi radio was built, configured, and launched. Includes all credentials, commands, decisions, and operational procedures.
+
+---
+
+## What This Is
+
+A 24/7 lo-fi radio stream running on a DigitalOcean VPS, pushing a looping video file via FFmpeg directly to YouTube's Outside Inn channel (`@the_outside_inn`). It runs completely unattended — no laptop required, no manual intervention, auto-restarts on any failure, survives VPS reboots.
+
+```
+VPS (FFmpeg loop) ──RTMPS──▶ YouTube @the_outside_inn (24/7)
+```
+
+---
+
+## Architecture Decisions
+
+| Decision | Choice | Reason |
+|---|---|---|
+| Restream vs direct YouTube | Direct YouTube | Restream was the failure point on the 151-hour E.I. Werner broadcast. Removing it eliminates one failure point and one monthly cost. |
+| tmux + shell loop vs systemd | systemd service | Systemd survives reboots, restarts automatically, logs to journald, never requires SSH to manage. |
+| Default stream key vs Scheduled Stream | Scheduled Stream + dedicated key | Default stream key has phantom streaming issue on reconnects >30s. Scheduled Stream with Auto-Start reconnects cleanly every time. |
+| RTMP vs RTMPS | RTMPS | Encrypted ingest. YouTube recommends it. Zero cost difference. |
+| Re-encode on VPS vs stream copy | Stream copy (`-c:v copy -c:a copy`) | Source file already meets YouTube specs exactly. Stream copy uses near-zero CPU on a $6/mo VPS. |
+
+---
+
+## Server
+
+| Field | Value |
+|---|---|
+| Provider | DigitalOcean |
+| OS | Ubuntu 24.04.3 LTS |
+| Spec | 1 vCPU, 1GB RAM, 25GB disk |
+| Region | NYC3 |
+| IP | `138.197.9.139` |
+| Login | `ssh root@138.197.9.139` |
+| Cost | $6/mo (free credit through ~late April 2026) |
+
+---
+
+## YouTube Channel
+
+| Field | Value |
+|---|---|
+| Channel name | Outside Inn |
+| Handle | `@the_outside_inn` |
+| Stream type | Scheduled Stream |
+| Stream name | Outside Inn Radio |
+| Auto-start | ON |
+| Auto-stop | OFF |
+| Privacy | Public |
+| Category | Music |
+| Latency | Normal latency |
+| Stream key name | Outside Inn Radio (RTMP, Variable) |
+| Stream key | `qvv0-8ugj-3hy0-66f5-9vgg` |
+| RTMPS ingest URL | `rtmps://a.rtmps.youtube.com/live2` |
+| Full RTMPS destination | `rtmps://a.rtmps.youtube.com/live2/qvv0-8ugj-3hy0-66f5-9vgg` |
+
+---
+
+## Video File
+
+| Field | Value |
+|---|---|
+| Filename | `HoldtLoop.mp4` |
+| Location on VPS | `/root/HoldtLoop.mp4` |
+| Location on Windows | `D:\StreamSourceFiles\HoldtLoop.mp4` |
+| File size | 2.3GB |
+| Duration | 6000 seconds (1h40m) |
+| Resolution | 1920×1080 |
+| Framerate | 6fps |
+| Video codec | H.264, High profile, yuv420p |
+| Keyframe interval | Every 2 seconds (I-frames at 0, 2, 4, 6, 8... seconds) |
+| Audio codec | AAC-LC |
+| Audio sample rate | 48000 Hz |
+| Audio channels | Stereo |
+| Video bitrate | ~3.1 Mbps |
+| Audio bitrate | ~130 Kbps |
+
+### Asset Validation Results (March 27, 2026)
+All checks passed. File does not require re-encoding.
+
+- `codec_name=h264` ✅
+- `profile=High` ✅
+- `r_frame_rate=6/1` ✅
+- `pix_fmt=yuv420p` ✅
+- `codec_name=aac` ✅
+- `profile=LC` ✅
+- `sample_rate=48000` ✅
+- `channel_layout=stereo` ✅
+- Keyframe interval: 2 seconds exactly ✅
+
+---
+
+## Files on VPS
+
+| Path | What it is |
+|---|---|
+| `/root/HoldtLoop.mp4` | The looping video file |
+| `/etc/outside-inn-radio.env` | Stream key and ingest URL (chmod 600) |
+| `/etc/systemd/system/outside-inn-radio.service` | The systemd service definition |
+
+---
+
+## Environment File
+
+**Path:** `/etc/outside-inn-radio.env`
+**Permissions:** 600 (root read/write only)
+
+```
+YT_INGEST_URL=rtmps://a.rtmps.youtube.com/live2
+YT_STREAM_KEY=qvv0-8ugj-3hy0-66f5-9vgg
+```
+
+---
+
+## Systemd Service File
+
+**Path:** `/etc/systemd/system/outside-inn-radio.service`
+
+```ini
+[Unit]
+Description=Outside Inn 24/7 Lo-Fi Radio
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=10
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/outside-inn-radio.env
+ExecStartPre=/usr/bin/test -r /root/HoldtLoop.mp4
+ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel warning -nostats -re -stream_loop -1 -i /root/HoldtLoop.mp4 -c:v copy -c:a copy -flvflags no_duration_filesize -f flv ${YT_INGEST_URL}/${YT_STREAM_KEY}
+Restart=always
+RestartSec=5
+RestartSteps=5
+RestartMaxDelaySec=60
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### What each line does
+
+| Line | Purpose |
+|---|---|
+| `After=network-online.target` / `Wants=network-online.target` | Don't start FFmpeg until network is up. Critical on VPS reboots. |
+| `StartLimitIntervalSec=600` / `StartLimitBurst=10` | Allows up to 10 restarts in 600 seconds before systemd gives up. Without this, systemd silently stops retrying after 5 failures in 10 seconds — stream dies with no recovery. |
+| `EnvironmentFile=` | Loads stream key from protected file. Key never appears in `systemctl status` output. |
+| `ExecStartPre=` | Pre-flight check — fails immediately with a clear error if video file is missing, rather than mysterious FFmpeg errors. |
+| `-nostdin` | Required for headless operation. Without it, FFmpeg can hang waiting for terminal input. |
+| `-hide_banner -loglevel warning -nostats` | Suppresses FFmpeg's startup banner and per-frame progress output. Without this, journald fills up within days. |
+| `-re` | Throttles FFmpeg to real-time playback speed. Without it, FFmpeg reads the file as fast as disk allows and floods the RTMP server. |
+| `-stream_loop -1` | Loops the file infinitely. |
+| `-c:v copy -c:a copy` | Stream copy — no re-encoding. Near-zero CPU usage. Safe only because source file already meets YouTube specs. |
+| `-flvflags no_duration_filesize` | Suppresses noisy FLV header warnings on every disconnect. |
+| `-f flv` | Required output container format for RTMP/RTMPS. |
+| `Restart=always` | Restarts on any exit, including clean exits (FFmpeg exits with code 0 on RTMP disconnect — `on-failure` would NOT catch this). |
+| `RestartSec=5` / `RestartSteps=5` / `RestartMaxDelaySec=60` | Exponential backoff — starts at 5s, ramps to 60s over 5 cycles. Fast recovery for glitches, not hammering YouTube during sustained outages. |
+
+---
+
+## Full Setup Procedure (What We Did)
+
+### Phase 0 — YouTube Setup
+
+1. YouTube Studio → Outside Inn channel → Manage → Schedule Stream
+2. Title: `Outside Inn Radio` | Category: Music | Privacy: Public
+3. Customization page: left all defaults
+4. Visibility page: Public, date/time irrelevant
+5. On stream dashboard: scrolled to Additional Settings → **Enable Auto-start: ON**, Auto-stop: OFF
+6. Stream key dropdown → Create new stream key → Name: `Outside Inn Radio`, Protocol: RTMP, no manual resolution settings
+7. Copied stream key: `qvv0-8ugj-3hy0-66f5-9vgg`
+
+### Phase 1 — Asset Validation (Windows PowerShell)
+
+```powershell
+# Video stream check
+ffprobe -v error -show_streams -select_streams v:0 D:\StreamSourceFiles\HoldtLoop.mp4
+
+# Audio stream check
+ffprobe -v error -show_streams -select_streams a:0 D:\StreamSourceFiles\HoldtLoop.mp4
+
+# Keyframe interval check
+ffprobe -v error -select_streams v:0 -show_frames -show_entries frame=pict_type,pts_time -of csv D:\StreamSourceFiles\HoldtLoop.mp4 | Select-String "I" | Select-Object -First 5
+```
+
+All passed. Keyframes confirmed at 0, 2, 4, 6, 8 seconds exactly.
+
+### Phase 2 — VPS Cleanup
+
+```bash
+ssh root@138.197.9.139
+pkill ffmpeg
+tmux kill-server
+ps aux | grep ffmpeg
+# Confirmed: only grep line returned, nothing running
+```
+
+### Phase 3 — Upload Video File (Windows PowerShell)
+
+```powershell
+scp D:\StreamSourceFiles\HoldtLoop.mp4 root@138.197.9.139:/root/HoldtLoop.mp4
+# Transfer: 2.3GB at ~124KB/s, took ~5 hours from Athens
+```
+
+Confirmed on VPS:
+```bash
+ls -lh /root/HoldtLoop.mp4
+# -rw-r--r-- 1 root root 2.3G Mar 27 00:28 /root/HoldtLoop.mp4
+```
+
+### Phase 4 — Create Environment File
+
+```bash
+nano /etc/outside-inn-radio.env
+# Typed:
+# YT_INGEST_URL=rtmps://a.rtmps.youtube.com/live2
+# YT_STREAM_KEY=qvv0-8ugj-3hy0-66f5-9vgg
+# Ctrl+O, Enter, Ctrl+X
+
+chmod 600 /etc/outside-inn-radio.env
+```
+
+### Phase 5 — Create Systemd Service
+
+```bash
+cat > /etc/systemd/system/outside-inn-radio.service << 'EOF'
+[Unit]
+Description=Outside Inn 24/7 Lo-Fi Radio
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=10
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/outside-inn-radio.env
+ExecStartPre=/usr/bin/test -r /root/HoldtLoop.mp4
+ExecStart=/usr/bin/ffmpeg -nostdin -hide_banner -loglevel warning -nostats -re -stream_loop -1 -i /root/HoldtLoop.mp4 -c:v copy -c:a copy -flvflags no_duration_filesize -f flv ${YT_INGEST_URL}/${YT_STREAM_KEY}
+Restart=always
+RestartSec=5
+RestartSteps=5
+RestartMaxDelaySec=60
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+### Phase 6 — Enable and Start
+
+```bash
+systemctl daemon-reload
+systemctl enable outside-inn-radio
+# Created symlink /etc/systemd/system/multi-user.target.wants/outside-inn-radio.service
+
+systemctl start outside-inn-radio
+systemctl status outside-inn-radio
+# Active: active (running) since Fri 2026-03-27 08:03:29 UTC
+```
+
+### Verification
+
+YouTube Studio → Outside Inn → Stream health tab:
+- Status: **Excellent** ✅
+- Message: "Stream is healthy. Stream health is excellent." ✅
+
+---
+
+## Daily Operations
+
+### Check if radio is running
+```bash
+ssh root@138.197.9.139
+systemctl status outside-inn-radio
+```
+`Active: active (running)` = running. That's the whole check.
+
+### View live logs
+```bash
+journalctl -u outside-inn-radio -f
+```
+Press `Ctrl+C` to exit — stream keeps running.
+
+### Stop the radio
+```bash
+systemctl stop outside-inn-radio
+```
+
+### Start after a manual stop
+```bash
+systemctl start outside-inn-radio
+```
+
+### Restart (after updating stream key or video file)
+```bash
+systemctl restart outside-inn-radio
+```
+
+---
+
+## Updating the Video File
+
+```bash
+# 1. Stop the service
+systemctl stop outside-inn-radio
+
+# 2. Upload new file from Windows PowerShell
+scp D:\StreamSourceFiles\HoldtLoop.mp4 root@138.197.9.139:/root/HoldtLoop.mp4
+
+# 3. Restart
+systemctl start outside-inn-radio
+systemctl status outside-inn-radio
+```
+
+---
+
+## Rotating the Stream Key
+
+```bash
+# 1. Get new key from YouTube Studio → Outside Inn → stream key → rotate icon
+# 2. Update env file on VPS
+nano /etc/outside-inn-radio.env
+# Update YT_STREAM_KEY value
+
+# 3. Restart service
+systemctl restart outside-inn-radio
+systemctl status outside-inn-radio
+```
+
+---
+
+## Auto-Restart Behavior
+
+| Event | What happens |
+|---|---|
+| YouTube drops connection | FFmpeg exits → restarts in 5s |
+| FFmpeg crashes | Restarts in 5s |
+| Rapid failures (bad key, network down) | Backoff ramps from 5s to 60s over 5 cycles |
+| VPS reboots | Service starts automatically on boot |
+| Manual stop | Stays stopped until you run `systemctl start` |
+| FFmpeg hangs (rare) | Does NOT auto-restart — systemd only restarts on process exit. Fix: `systemctl restart outside-inn-radio` |
+
+---
+
+## Troubleshooting
+
+### Stream not appearing on YouTube
+1. `systemctl status outside-inn-radio` — is it running?
+2. `journalctl -u outside-inn-radio -f` — any errors?
+3. Check stream key in `/etc/outside-inn-radio.env`
+4. In YouTube Studio, confirm you're viewing the "Outside Inn Radio" stream key, not Default stream
+
+### Service fails to start
+```bash
+journalctl -u outside-inn-radio --no-pager -n 50
+```
+Most common causes: wrong stream key, or video file missing.
+
+### Service stopped restarting on its own
+```bash
+systemctl status outside-inn-radio
+# If shows "failed":
+systemctl reset-failed outside-inn-radio
+systemctl start outside-inn-radio
+```
+
+### FFmpeg not found
+```bash
+which ffmpeg
+apt update && apt install ffmpeg -y
+```
+
+---
+
+## Asset Validation Commands (for future reference)
+
+Run these on Windows before uploading any new HoldtLoop.mp4:
+
+```powershell
+# Video codec/profile/framerate
+ffprobe -v error -show_streams -select_streams v:0 D:\StreamSourceFiles\HoldtLoop.mp4
+
+# Audio codec/samplerate/channels
+ffprobe -v error -show_streams -select_streams a:0 D:\StreamSourceFiles\HoldtLoop.mp4
+
+# Keyframe timestamps (should be 0, 2, 4, 6, 8...)
+ffprobe -v error -select_streams v:0 -show_frames -show_entries frame=pict_type,pts_time -of csv D:\StreamSourceFiles\HoldtLoop.mp4 | Select-String "I" | Select-Object -First 5
+```
+
+Required values:
+| Field | Required |
+|---|---|
+| `codec_name` (video) | `h264` |
+| `profile` | `High` |
+| `r_frame_rate` | `6/1` |
+| `pix_fmt` | `yuv420p` |
+| `codec_name` (audio) | `aac` |
+| `profile` (audio) | `LC` |
+| `sample_rate` | `44100` or `48000` |
+| `channel_layout` | `stereo` |
+| Keyframe interval | Every 2 seconds |
+
+If anything fails, re-encode before uploading:
+```powershell
+ffmpeg -i D:\StreamSourceFiles\HoldtLoop.mp4 `
+  -c:v libx264 -profile:v high -g 12 -keyint_min 12 -pix_fmt yuv420p `
+  -c:a aac -ar 44100 -ac 2 `
+  D:\StreamSourceFiles\HoldtLoop_fixed.mp4
+```
+
+---
+
+## Source Files (Windows)
+
+| File | Path |
+|---|---|
+| Source PNGs (480 frames) | `D:\StreamSourceFiles\HoldtAnimationPNGs1\` |
+| Lo-Fi music (original WAV) | `D:\StreamSourceFiles\LofiLoop.wav` |
+| Intermediate silent video | `D:\StreamSourceFiles\holdt_6fps.mp4` |
+| Final loop file | `D:\StreamSourceFiles\HoldtLoop.mp4` |
+
+All on SanDisk Extreme 2TB SSD (portable).
+
+### How HoldtLoop.mp4 Was Built
+
+**Step 1 — PNGs to silent video:**
+```bash
+ffmpeg -framerate 6 -i "D:\StreamSourceFiles\HoldtAnimationPNGs1\%d.png" -c:v libx264 -pix_fmt yuv420p "D:\StreamSourceFiles\holdt_6fps.mp4"
+```
+
+**Step 2 — Loop animation + add music:**
+```bash
+ffmpeg -stream_loop -1 -i "D:\StreamSourceFiles\holdt_6fps.mp4" -i "D:\StreamSourceFiles\LofiLoop.wav" -map 0:v -map 1:a -c:v libx264 -g 12 -keyint_min 12 -c:a aac -t 6000 "D:\StreamSourceFiles\HoldtLoop.mp4"
+```
+
+**Step 3 — Upload to VPS:**
+```powershell
+scp D:\StreamSourceFiles\HoldtLoop.mp4 root@138.197.9.139:/root/HoldtLoop.mp4
+```
+
+---
+
+## Monthly Cost
+
+| Item | Cost |
+|---|---|
+| DigitalOcean VPS | $6/mo (free credit through ~late April 2026) |
+| Restream | $0 — not used for Outside Inn |
+| YouTube | Free |
+| **Total** | **$6/mo** |
+
+---
+
+## Stream Credits
+
+- **Original pixel art & animation:** Marwan Hasnaoui
+- **Original lo-fi composition:** Carson Thatcher
+- **© Outside Inn Studios, LLC. All rights reserved.**
+
+---
+
+## Key Context
+
+- This radio is separate from the E.I. Werner channel (`@EIWerner`) which is used for live streams
+- E.I. Werner live streams go direct to YouTube via OBS on the AERO X16 laptop — no Restream
+- The old E.I. Werner lo-fi radio used Restream + tmux — this Outside Inn setup replaces that pattern with direct YouTube + systemd
+- The previous 151-hour broadcast on E.I. Werner failed because Restream dropped the VPS connection with no auto-restart — this setup solves both problems
+- Mac Mini M4 upgrade (~$499) is deferred — planned post-Athens once streaming cadence is validated
+
+---
+
+*Outside Inn Studios | innkeep@outsideinn.tv | Last updated March 27, 2026*
