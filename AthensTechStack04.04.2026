@@ -1,0 +1,530 @@
+# Athens Master Tech Kit
+**Outside Inn Studios | Mar–May 2026 | Living Document**
+
+> Single master reference for all hardware, software, streaming infrastructure, simulcast strategy, recording strategy, and accumulated issue/fix history. Optimized for AI project context and GitHub. Supersedes `AthensTechStack03_31_2026.md`. Update when anything changes.
+
+---
+
+## QUICK REFERENCE — CONFIRMED WORKING STATE
+
+```
+Machine         GIGABYTE AERO X16 — Ryzen AI 7 350, RTX 5070 Laptop, 32GB DDR5, Win 11
+Stream path     OBS → Restream.io (Europe - Frankfurt) → YouTube (@EIWerner) + Twitch (@eiwerner)
+Bitrate         4500 kbps CBR — confirmed safe ceiling for this connection
+Keyframe        2 seconds — required by Restream
+Camera          Elgato Facecam MK.2 — physical device in OBS (not Elgato Virtual Camera)
+Gameplay        Window Capture — WoW in Borderless Windowed (not Game Capture)
+Titles          Always via Restream Update Titles — never YouTube Studio or Twitch directly
+Chat            Twitch popout on laptop + YouTube Studio on iPad
+Recording       Source Record (camera ISO + gameplay ISO) + OBS built-in (full canvas)
+VPS             DigitalOcean → Restream → YouTube 24/7 lo-fi radio (separate stream slot)
+SSD             D:\StreamSourceFiles\ (SanDisk 2TB Extreme)
+```
+
+---
+
+## CONSTRAINTS & TRUST LEVELS
+
+> `✓` = verified from primary source or direct testing. `⚠️` = assumption or community report — verify before acting.
+
+| # | Item | Status |
+|---|---|---|
+| C1 | OBS Server must be **Europe - Frankfurt** — never Autodetect | ✓ Confirmed Mar 31 |
+| C2 | OBS Bitrate ceiling is **4500 kbps** for this apartment connection | ✓ Confirmed Mar 31 |
+| C3 | OBS Keyframe Interval must be **2 seconds** — Restream requirement | ✓ Confirmed Mar 31 |
+| C4 | Stream titles must be set via **Restream Update Titles only** — never YouTube Studio or Twitch | ✓ Confirmed Mar 31 |
+| C5 | OBS camera source must point to **"Elgato Facecam MK.2"** (physical device), not Elgato Virtual Camera | ✓ Confirmed Mar 31 |
+| C6 | **Camera Hub must be fully quit via system tray** before streaming — X-ing out is not enough | ✓ Confirmed Mar 31 |
+| C7 | **OBS dropped frames counter is cumulative per session** — resets only on stream restart | ✓ Confirmed Mar 31 |
+| C8 | **Do not change server or bitrate mid-stream** — OBS locks stream settings while live | ✓ |
+| C9 | **GiMATE must stay in Optimus mode** — ECO mode disables dGPU entirely | ✓ Confirmed Mar 17 |
+| C10 | **Game Capture must not be used for WoW** — hooks DirectX pipeline, worsens GPU crashes | ✓ Confirmed Mar 17 |
+| C11 | **ZenScreen connects via USB-A + DisplayLink** — hub does not support DP Alt Mode | ✓ |
+| C12 | **Facecam cable must be USB 3.0** — USB 2.0 silently downgrades to MJPEG compressed output | ✓ |
+| C13 | **Lo-fi VPS must not run during live streams** — two Restream sources on same account cause conflicts | ✓ |
+| C14 | **Full canvas OBS recorder does not auto-start with streaming** — manual Start Recording required | ✓ |
+| C15 | Source Record "NVENC new" encoder option is **broken** — always use "NVENC H.264" | ✓ |
+| C16 | Actual upload speed is **8–10 Mbps** — not the nominal 19 Mbps advertised by apartment | ✓ Confirmed Mar 31 |
+| C17 | **USB Selective Suspend should be disabled** for all USB Root Hub (USB 3.0) entries | ✓ |
+| C18 | All recordings write to **local SSD only** — zero upload bandwidth impact on stream | ✓ |
+
+---
+
+## 1. HARDWARE
+
+### 1a. Primary Machine
+
+| Field | Value |
+|---|---|
+| **Device** | GIGABYTE AERO X16 1WH — OutsideInnHQ |
+| **CPU** | AMD Ryzen AI 7 350 (8c/16t, up to 5GHz) |
+| **GPU** | NVIDIA RTX 5070 Laptop (8GB GDDR7) — driver 595.79 WHQL |
+| **RAM** | 32GB DDR5 5600MHz — memory diagnostic clean ✅ |
+| **OS** | Windows 11 Home 64-bit |
+| **Display** | 16" IPS 2560×1600 165Hz (16:10) |
+| **Ports** | 1× USB4/USB-C (DP 1.4, PD 3.0), 1× HDMI 2.1, 2× USB-A 3.2, 1× USB-A 2.0, RJ45 |
+
+> ⚠️ Only one USB-C port — Anker hub occupies it during streaming.
+> ⚠️ Laptop display is 2560×1600 (16:10). OBS canvas is 1920×1080 (16:9). Display Capture of laptop screen causes black bars. ZenScreen at 1920×1080 native is the broadcast display solution.
+> ⚠️ GiMATE must stay in Optimus mode (C9).
+
+### 1b. Active Streaming Stack
+
+| Item | Role | Notes |
+|---|---|---|
+| **Anker 341 USB-C Hub (7-in-1)** | Primary hub — all peripherals route through here | Occupies only USB-C port |
+| **Ethernet cable** | Direct wired connection — laptop RJ45 → apartment router | Always wired for streams |
+| **ASUS ZenScreen MB16ACV** | Dedicated 1920×1080 broadcast display — eliminates res mismatch | USB-C to USB-A → DisplayLink |
+| **Elgato Facecam MK.2** | Primary stream camera — `TheCatCamera` in OBS | USB 3.0 required |
+| **Blue Yeti Nano** | Primary stream mic | Micro-USB (not Mini-USB) |
+| **Elgato Key Light Neo** | Key light — WiFi controlled, clips to ZenScreen | No USB port consumed |
+| **Elgato Stream Deck +** | Scene switching, audio control, go-live | USB-C to USB-A |
+| **Razer Naga Mouse** | Primary mouse | Wired USB-A |
+| **iPad** | YouTube chat monitor | WiFi only, zero ports consumed |
+| **SanDisk 2TB Extreme SSD** | All stream source files + recordings | `D:\StreamSourceFiles\` |
+
+### 1c. Available But Not Active
+
+| Item | Role | Notes |
+|---|---|---|
+| **GL.iNet GL-MT6000 Router** | Primary router with WAN2 failover | Available — ethernet direct currently sufficient |
+| **AT&T Hotspot + Greek SIM** | 5G backup internet | Available — not needed while wired is stable |
+| **TalentCell Mini UPS (97.2Wh)** | Router UPS on power drops | Available — not in use without router |
+| **BENFEI USB-C to Ethernet** | Backup ethernet path | Backup only |
+| **Insignia USB-C Hub** | Backup hub | Backup only |
+| **Anker 737 Power Bank (88.8Wh)** | Laptop backup power | Available |
+| **GoPro HERO13 Black** | BTS / travel b-roll / IRL | Available |
+| **Sony WH-1000XM5** | Monitoring + travel | Available |
+| **Samsung T9 2TB SSD** | Backup — irreplaceable data | Available |
+
+### 1d. Hub Layout (Anker 341, during streams)
+
+| Hub Port | Connected Device | Cable Requirement |
+|---|---|---|
+| USB-C PD | Anker 100W GaN charger (wall) | USB-C to USB-C |
+| USB-A (3.0) | Elgato Facecam MK.2 | USB-C to USB-A — **must be USB 3.0** (C12) |
+| USB-A (3.0) | Blue Yeti Nano | Micro-USB to USB-A |
+| USB-A (3.0) | ZenScreen MB16ACV | USB-C to USB-A — DisplayLink driver required |
+| USB-A (3.0) | Elgato Stream Deck + | USB-C to USB-A |
+
+### 1e. Cable Reference
+
+**Elgato Facecam MK.2**
+- Connector at camera: USB-C → Connector at hub: USB-A
+- USB 3.0 (5 Gbps) minimum — non-negotiable for uncompressed 1080p60
+- USB 2.0 silently falls back to MJPEG compressed with no error shown
+- Max safe passive length: 3m
+
+**ASUS ZenScreen MB16ACV**
+- Current method: USB-C to USB-A → hub USB-A port → DisplayLink driver ✅
+- Hub does NOT support DP Alt Mode — cannot use USB-C direct through hub (C11)
+- Alternative (not in use): USB-C direct to laptop takes the only USB-C port
+
+**Blue Yeti Nano**
+- Connector: Micro-USB (not Mini-USB — common mistake)
+- USB 2.0 sufficient — data + charge cable required (charge-only won't transmit audio)
+- Max practical length: 3m before electrical noise risk
+
+### 1f. Internet
+
+| Field | Value |
+|---|---|
+| **Primary** | Flatio apartment wired — 195/19 Mbps nominal; **actual upload ~8–10 Mbps tested** |
+| **Connection** | Ethernet → laptop RJ45 directly |
+| **Backup** | AT&T hotspot + Greek SIM (available, not active) |
+
+> Always wired for streaming — never WiFi. 4500 kbps is the confirmed safe streaming ceiling (C2, C16).
+
+### 1g. Power
+
+- **Anker 100W GaN Charger (3-port)** — primary wall charger, feeds hub PD at 100W
+- **European Type C Adapters ×2** — US → EU plug, confirmed safe for Greek 230V outlets
+
+---
+
+## 2. SOFTWARE
+
+| Software | Role | Notes |
+|---|---|---|
+| **OBS Studio** | Stream + record | See settings below |
+| **Restream.io** | Simulcast router — YouTube + Twitch | Cloud-based, single RTMP from OBS |
+| **Elgato Camera Hub** | Camera settings only — must be quit before streaming | Settings persist to camera onboard flash |
+| **DisplayLink driver** | Required for ZenScreen over USB-A | Already installed ✅ |
+| **NVIDIA driver 595.79 WHQL** | GPU driver — DDU clean installed | Do not update without testing |
+| **GiMATE** | GPU mode manager | Always Optimus mode (C9) |
+| **Source Record (Exeldro)** | Per-source ISO recording | OBS plugin — v0.4.8+ |
+| **PowerToys** | Window Resizer — 1600×900 preset | For 16:9 Window Capture on laptop screen |
+| **WhoCrashed** | BSOD minidump analysis | Used for BSOD diagnosis |
+
+---
+
+## 3. SIMULCAST STRATEGY
+
+### Architecture
+
+```
+OBS (AERO X16)
+  └─► Restream.io RTMP (Europe - Frankfurt)
+        ├─► YouTube Live (@EIWerner)
+        └─► Twitch (@eiwerner)
+```
+
+Restream is cloud-based: OBS encodes once, sends one RTMP stream, Restream duplicates server-side. This means simulcasting adds **zero additional upload bandwidth or encoding load** on the local machine.
+
+### Confirmed OBS Stream Settings (March 31, 2026)
+
+| Setting | Value | Why |
+|---|---|---|
+| **Service** | Restream.io | — |
+| **Server** | Europe - Frankfurt | Autodetect routes badly on this connection (C1) |
+| **Video Encoder** | NVIDIA NVENC H.264 | Hardware encode — minimal GPU gaming impact |
+| **Rate Control** | Constant Bitrate (CBR) | Required for stable RTMP |
+| **Bitrate** | 4500 kbps | Safe ceiling for 8–10 Mbps actual upload (C2) |
+| **Keyframe Interval** | 2 seconds | Restream hard requirement (C3) |
+| **Preset** | P5: Slow (Good Quality) | — |
+| **Output Resolution** | 1920×1080 | Matches ZenScreen native |
+
+### Title Management
+
+**Restream is the single source of truth for stream titles.** Titles set in YouTube Studio or Twitch dashboard do not reliably propagate when streaming through Restream. Always use `app.restream.io` → Update Titles before going live (C4).
+
+### Chat Monitoring
+
+| Platform | Method | URL |
+|---|---|---|
+| **Twitch** | Popout tab on laptop | `twitch.tv/popout/eiwerner/chat` |
+| **YouTube** | YouTube Studio app on iPad | Live stream → chat panel |
+
+OBS's native YouTube Chat dock is unavailable when routing through Restream (OBS is not directly authenticated to YouTube in this path). iPad is the permanent solution.
+
+---
+
+## 4. RECORDING STRATEGY
+
+### Architecture
+
+Three simultaneous outputs run alongside the Restream stream:
+
+| Output | Method | Auto-starts? | Encoder |
+|---|---|---|---|
+| **ISO: Camera** | Source Record filter on camera source | ✓ Yes | NVENC H.264 |
+| **ISO: Gameplay** | Source Record filter on gameplay source | ✓ Yes | NVENC H.264 |
+| **Full canvas composite** | OBS built-in recorder | ✗ Manual | x264 |
+
+**NVENC session count:**
+```
+1 × Restream stream          (NVENC H.264, 4500 kbps)
+1 × Camera ISO               (NVENC H.264, CQP 18)
+1 × Gameplay ISO             (NVENC H.264, CQP 18)
+─────────────────────────────────────────────────
+Total NVENC: 3    ← within RTX 5070 Laptop limits
+
+Full canvas uses x264 intentionally — preserves NVENC headroom
+```
+
+> All recordings write locally to SanDisk SSD — zero upload bandwidth impact (C18).
+
+### Plugin: Source Record
+
+```
+Plugin      Source Record by Exeldro
+Version     v0.4.8+ required for OBS 31.x
+Install     obsproject.com/forum/resources/source-record.1285/
+Rating      3.68/5 — known: OBS freeze on exit (mitigated v0.4.8), audio crackling workaround required
+Fallback    Branch Output (hanatyan) — 4.57/5, more stable, fewer features
+```
+
+### ISO Camera Recording Config
+
+Target source: `TheCatCamera` (Elgato Facecam MK.2 physical device)
+
+```
+Filter type         Source Record (Effect Filter)
+Record Mode         Streaming       ← auto-starts with OBS Start Streaming
+Output Path         D:\StreamSourceFiles\Recordings\Camera\
+File Format         MKV             ← crash-safe; remux to MP4 post-stream
+Encoder             NVENC H.264     ← NOT "NVENC new" — broken (C15)
+Rate Control        CQP
+CQP Value           18              ← raise to 20–22 to reduce file size if needed
+Different Audio     Enabled
+Audio Source        Mic track       ← workaround for audio crackling bug
+```
+
+> Source Record captures at the raw source native resolution — Facecam MK.2 = 1080p regardless of canvas transforms.
+
+### ISO Gameplay Recording Config
+
+Target source: Window Capture of WoW (Borderless Windowed) — never Game Capture (C10)
+
+```
+Filter type         Source Record (Effect Filter)
+Record Mode         Streaming
+Output Path         D:\StreamSourceFiles\Recordings\Gameplay\
+File Format         MKV
+Encoder             NVENC H.264
+Rate Control        CQP
+CQP Value           18
+Different Audio     Enabled
+Audio Source        Game audio track
+```
+
+### Full Canvas Recording Config
+
+OBS → Settings → Output → Recording tab (Advanced mode):
+
+```
+Recording Format    MKV
+Encoder             x264            ← intentional — avoids NVENC session pressure
+Rate Control        CRF
+CRF Value           18
+Preset              veryfast        ← drop to ultrafast if CPU spikes
+Audio Tracks        1, 2            ← track 1: mix; track 2: mic isolated
+Recording Path      D:\StreamSourceFiles\Recordings\FullCanvas\
+File Naming         %CCYY-%MM-%DD_%hh-%mm-%ss_FullCanvas
+```
+
+> Does NOT auto-start with streaming (C14). Must be started manually — see checklist below.
+
+### Recording Folder Structure
+
+```
+D:\StreamSourceFiles\
+└── Recordings\
+    ├── Camera\         ← ISO camera (Source Record)
+    ├── Gameplay\       ← ISO gameplay (Source Record)
+    └── FullCanvas\     ← Full composite (OBS built-in)
+```
+
+### Vertical / Portrait Crops (Shorts / TikTok)
+
+Source Record ignores canvas transforms — do NOT apply it directly to the camera source for vertical output. Instead:
+
+1. Create scene: `CameraVertical_1080x1920`
+2. Right-click scene → Scene Settings → 1080×1920
+3. Add camera source → crop for portrait framing
+4. Apply Source Record filter to this scene, not the raw source
+
+---
+
+## 5. GO-LIVE CHECKLIST
+
+### Pre-Stream
+
+```
+[ ] Confirm lo-fi VPS is NOT streaming — separate Restream slot, conflicts if both run (C13)
+[ ] Restream → app.restream.io → Update Titles — title + category for both platforms
+[ ] Verify OBS Stream settings:
+      Service    = Restream.io
+      Server     = Europe - Frankfurt   ← never Autodetect (C1)
+      Bitrate    = 4500 kbps            ← never higher (C2)
+      Keyframe   = 2 seconds            ← required (C3)
+[ ] Verify camera source = Elgato Facecam MK.2 (not Elgato Virtual Camera) (C5)
+[ ] Camera Hub: open → verify settings → Save → X out → quit fully from system tray (C6)
+[ ] YouTube Studio: confirm stream privacy (Unlisted for tests, Public for live)
+[ ] Twitch Dashboard: confirm channel is ready — no title edit needed
+```
+
+### Going Live
+
+```
+[ ] OBS → Start Streaming
+      ↳ Source Record (camera ISO) auto-starts
+      ↳ Source Record (gameplay ISO) auto-starts
+[ ] OBS → Start Recording    ← manual step for full canvas (C14)
+[ ] OBS bottom bar: dropped frames < 2% within 60 seconds — if climbing, see troubleshooting
+[ ] Chat: Twitch popout (laptop) + YouTube Studio (iPad)
+```
+
+### Post-Stream
+
+```
+[ ] OBS → Stop Recording     ← full canvas
+[ ] OBS → Stop Streaming
+      ↳ Source Record filters stop automatically
+[ ] Remux MKV → MP4:
+      OBS → File → Remux Recordings → select all three MKV files → Remux
+      Keep MKV originals until remux confirmed clean
+[ ] Move files to dated archive folder
+```
+
+---
+
+## 6. ISSUES ENCOUNTERED — FULL HISTORY
+
+### Issue Log Format
+
+Each entry: **Root cause → Symptom → Fix → Status**
+
+---
+
+### [I-01] WoW crash on transmog / Warband UI
+- **Root cause:** WoW DirectX compatibility issue
+- **Symptom:** Game crash on specific UI interactions
+- **Fix:** Add `-d3d11` to Battle.net Additional Command Line Arguments
+- **Status:** ✅ Fixed Mar 17
+
+---
+
+### [I-02] OBS Game Capture causing GPU crashes
+- **Root cause:** Game Capture hooks into WoW's DirectX pipeline — conflicts with GPU under load
+- **Symptom:** GPU instability, crashes during WoW streams
+- **Fix:** Switch OBS to Window Capture; set WoW to Borderless Windowed mode
+- **Status:** ✅ Fixed Mar 17
+
+---
+
+### [I-03] Daily BSODs — `nvlddmkm.sys_Blackwell` (MEMORY_MANAGEMENT 0x1A)
+- **Root cause:** Corrupt or incompatible NVIDIA driver on Blackwell GPU
+- **Symptom:** BSOD `nvlddmkm.sys` — daily, unpredictable
+- **Fix:** DDU clean uninstall → fresh install NVIDIA driver 595.79 WHQL
+- **Status:** ✅ Fixed Mar 17
+
+---
+
+### [I-04] OBS resolution mismatch — black bars / cropping on Display Capture
+- **Root cause:** Laptop display is 2560×1600 (16:10); OBS canvas is 1920×1080 (16:9)
+- **Symptom:** Display Capture of laptop screen produces black bars or cropped image in OBS
+- **Fix:** Use ZenScreen MB16ACV (1920×1080 native) as dedicated broadcast display. OBS Display Capture pointed at ZenScreen — native resolution match, no bars.
+- **Workaround for laptop screen content:** Window Capture of specific app (e.g., Notion resized to 1600×900 via PowerToys)
+- **Status:** ✅ Fixed Mar 17
+
+---
+
+### [I-05] GiMATE ECO mode disabling dGPU
+- **Root cause:** ECO mode routes all GPU output through integrated AMD Radeon only
+- **Symptom:** OBS and games using integrated GPU instead of RTX 5070 — poor performance
+- **Fix:** GiMATE → set to Optimus mode permanently. Never use ECO mode.
+- **Status:** ✅ Fixed Mar 17
+
+---
+
+### [I-06] Wrong stream titles on YouTube and Twitch at launch
+- **Root cause:** Titles set directly in YouTube Studio and Twitch dashboard instead of through Restream
+- **Symptom:** Both platforms showed wrong/stale titles when stream went live
+- **Fix:** Titles must always be set via Restream → Update Titles. Restream is the single source of truth for titles when simulcasting. Never set titles on destination platforms directly (C4).
+- **Status:** ✅ Fixed Mar 31
+
+---
+
+### [I-07] OBS disconnecting immediately on first stream attempt
+- **Root cause:** Two settings had never been corrected for Restream: bitrate at 9000 kbps (too high for Restream Standard and apartment upload), keyframe interval at 0/auto (Restream requires exactly 2 seconds)
+- **Symptom:** OBS connecting and disconnecting repeatedly; Twitch showing UNSTABLE
+- **Fix:**
+  - Output → Bitrate → 6000 kbps (then further to 4500)
+  - Output → Keyframe Interval → 2 seconds
+- **Status:** ✅ Fixed Mar 31
+
+---
+
+### [I-08] Severe dropped frames at 65%+ even after bitrate reduction
+- **Root cause:** OBS Server set to Autodetect — routing to a poorly performing server. Cannot be changed mid-stream.
+- **Symptom:** 65%+ dropped frames, OBS cycling connecting/disconnecting, speed test showing actual upload only 8.4 Mbps
+- **Fix:**
+  1. Stop stream
+  2. OBS Settings → Stream → Server → Europe - Frankfurt (never Autodetect)
+  3. Drop bitrate to 4500 kbps (confirmed safe ceiling for 8–10 Mbps actual upload)
+  4. Restart stream
+- **Key constraint established:** Never use Autodetect. Never change server mid-stream. (C1, C2, C8)
+- **Status:** ✅ Fixed Mar 31
+
+---
+
+### [I-09] Dropped frames counter still climbing after Frankfurt fix — false alarm
+- **Root cause:** OBS dropped frames counter is cumulative per session — it carries all frames from earlier failed attempts in the same OBS session
+- **Symptom:** Counter appeared to keep rising after switching to Frankfurt + 4500 kbps — caused alarm about whether the fix worked
+- **Fix:** Full computer restart for a clean session. After restart with Frankfurt + 4500 kbps + keyframe 2s, both YouTube and Twitch showed EXCELLENT within 2 minutes.
+- **Key constraint established:** Always restart OBS (or full machine) for a clean dropped frames read when testing (C7)
+- **Status:** ✅ Fixed Mar 31
+
+---
+
+### [I-10] Camera feed dying when Camera Hub was quit
+- **Root cause:** OBS camera source was pointed at "Elgato Virtual Camera" — a software layer that Camera Hub runs. When Camera Hub is quit, Virtual Camera shuts down with it, killing the OBS camera feed.
+- **Symptom:** After reboot, Camera Hub auto-launched on startup. Quitting it killed the OBS camera feed entirely.
+- **Fix:**
+  1. In OBS: double-click camera source → change Device from "Elgato Virtual Camera" → "Elgato Facecam MK.2" (physical device)
+  2. In Camera Hub: open → verify settings → hit Save (writes to camera's onboard flash memory) → X out → quit fully from system tray
+  3. Camera Hub does not need to run during streams. Settings persist to camera hardware.
+- **Camera Hub pre-stream ritual:** Open → verify → Save → X → system tray quit. This order matters (C5, C6).
+- **Status:** ✅ Fixed Mar 31
+
+---
+
+## 7. VPS — LO-FI RADIO
+
+| Field | Value |
+|---|---|
+| **Provider** | DigitalOcean (Ubuntu, 1GB RAM) |
+| **Function** | FFmpeg looping `HoldtLoop.mp4` → Restream → YouTube 24/7 |
+| **Stream key** | Separate Restream slot — distinct from live stream key |
+| **Known issue** | No auto-restart loop — if Restream drops connection, FFmpeg process dies |
+| **Priority** | High — implement shell loop wrapper before next extended absence |
+
+> ⚠️ Confirm lo-fi VPS is NOT streaming before starting any live stream. Two sources on the same Restream account simultaneously can cause conflicts. (C13)
+
+---
+
+## 8. TROUBLESHOOTING REFERENCE
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Wrong titles on YouTube / Twitch | Set in platform dashboards instead of Restream | Restream → Update Titles — always (C4) |
+| OBS disconnecting on stream start | Bitrate too high or keyframe not set | Bitrate → 4500; Keyframe → 2s (C2, C3) |
+| Dropped frames 65%+ | Autodetect server routing to bad server | Stop stream → Frankfurt → restart (C1) |
+| Dropped frames counter climbing after fix | Cumulative counter not reset | Stop stream → restart OBS or reboot (C7) |
+| Camera feed dies when Camera Hub quits | OBS pointed at Virtual Camera, not physical | Set source to Elgato Facecam MK.2 (C5) |
+| Choppy camera feed ~90 min into stream | Camera Hub running, causing memory leak | Quit Camera Hub fully via system tray (C6) |
+| Black bars in OBS Display Capture | Laptop screen 16:10, OBS canvas 16:9 | Use ZenScreen as broadcast display (I-04) |
+| WoW crash on transmog / Warband UI | DirectX compatibility | `-d3d11` in Battle.net CLI args (I-01) |
+| GPU crashes during WoW stream | Game Capture hooking DX pipeline | Window Capture + Borderless Windowed (I-02, C10) |
+| Source Record not recording | Record Mode wrong | Filter → Record Mode → Streaming |
+| Audio crackling in ISO recording | Source Record audio bug | Enable Different Audio → select mic track explicitly |
+| OBS freezes on exit | Source Record known bug | Force-close OBS; MKV recordings intact |
+| NVENC error in Source Record | Session limit hit | Switch full canvas to x264; reduce ISO count |
+| Full canvas recording not running | Forgot manual start | Start Recording after Start Streaming (C14) |
+| Gameplay ISO black / empty | Game Capture used | Confirm Window Capture is the source (C10, C12) |
+
+---
+
+## 9. COMPANION DOCUMENTS
+
+| Document | Covers |
+|---|---|
+| `FourthwallMasterTech03_22_2026.md` | Fourthwall API, webhooks, StreamElements alerts, merch specs |
+| `FourthwallMemberships03_22_2026.md` | Memberships ops, tiers, perks, Discord, DMs, analytics |
+| `OBS_SourceRecording_04_04_2026.md` | Deep-dive on Source Record plugin setup (superseded by §4 above, kept for detail) |
+
+---
+
+## 10. ON THE HORIZON
+
+```
+[ ] Implement VPS shell loop wrapper — FFmpeg auto-restart on Restream disconnect
+[ ] Confirm Fourthwall membership alert end-to-end with real membership purchase
+[ ] Update DisplayLink driver — suspected in historical BSOD on sleep/wake cycles
+[ ] Verify Fourthwall help article URL slugs ahead of Twitch launch
+[ ] Build PNG-to-animation workflow for lo-fi radio VPS (integrating with HoldtLoop.mp4)
+[ ] Add full canvas recording Start to Stream Deck go-live button sequence
+[ ] Mac Mini M4 upgrade (~$499) — deferred until streaming cadence validated post-Athens
+```
+
+---
+
+## 11. AI CONTEXT NOTES
+
+- **Streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070 Laptop, 32GB DDR5, Windows 11)
+- **Simulcast:** OBS → Restream.io (Europe - Frankfurt) → YouTube (@EIWerner) + Twitch (@eiwerner). Confirmed working March 31, 2026.
+- **Recording:** Source Record (camera ISO + gameplay ISO, auto-start) + OBS built-in (full canvas, manual start). All local to SanDisk SSD. Zero stream bandwidth impact.
+- **Titles:** Always Restream Update Titles — never platform dashboards directly.
+- **Camera:** Elgato Facecam MK.2, physical device in OBS. Camera Hub not needed during streams; quit via system tray pre-stream.
+- **Gameplay:** Window Capture only — WoW in Borderless Windowed. Never Game Capture.
+- **Bitrate ceiling:** 4500 kbps — apartment actual upload is 8–10 Mbps despite 19 Mbps nominal.
+- **Server:** Europe - Frankfurt — hardcoded, never Autodetect.
+- **Dropped frames counter:** Cumulative per OBS session — restart for clean read.
+- **Lo-fi radio:** DigitalOcean VPS → separate Restream slot → YouTube 24/7. Must not run during live streams.
+- **SSD:** All stream files at `D:\StreamSourceFiles\`
+
+---
+
+*Outside Inn Studios | innkeep@outsideinn.tv | Living Document — update when anything changes*
+*Contact: innkeep@outsideinn.tv | YouTube: @EIWerner | Twitch: @eiwerner*
