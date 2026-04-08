@@ -1,0 +1,504 @@
+# iA Writer Master Guide
+**E.I. Werner / Outside Inn Studios | April 2026**
+*Verified against iA Writer documentation, iA.net, and Windows 2.0 release notes. Last updated: April 2026.*
+
+> **How to use this file:** This is the single reference for iA Writer as used by E.I. Werner — Windows 11 (GIGABYTE AERO X16), writing epic poetry and mythology, streaming live to Twitch and YouTube via OBS Studio. Add to Claude Project and GitHub. All information verified April 2026 with Windows-specific notes flagged throughout.
+
+---
+
+## Platform and version
+
+iA Writer uses a **one-time purchase model** — no subscription, no recurring fees. E.I. Werner owns the Windows version.
+
+| Platform | Store | Notes |
+|----------|-------|-------|
+| **Windows (owned)** | Microsoft Store / iA Store | Current version: **iA Writer for Windows 2.0** (released February 17, 2025) |
+| Mac | Mac App Store / iA Store | Separate purchase — Windows license does not transfer |
+| iOS / iPadOS | Apple App Store | Separate purchase |
+
+**Android was discontinued in October 2024.** Google revoked Drive API access and required expensive annual security audits. No Linux or web version exists.
+
+All export formats (PDF, Word, HTML, Markdown) are included. Nothing is paywalled beyond the initial purchase.
+
+---
+
+## Windows 2.0 — what it has, what it's missing
+
+### What Windows has that Mac lacks
+
+Windows 2.0 actually leads Mac in several features:
+
+- **Folding** — collapse document sections by heading. Essential for navigating long mythology manuscripts
+- **Dynamic Outline** — heading-based sidebar navigation for large documents
+- **Writing Goals** — word-count targets per document
+- **Snippets** — multi-line text expansion shortcuts, useful for recurring Markdown patterns or verse structures
+- **Hunspell dictionaries** — expandable with custom language files
+
+### What Windows is missing compared to Mac
+
+| Feature | Windows | Mac |
+|---------|---------|-----|
+| Focus Mode (Sentence / Paragraph / Typewriter) | ✅ | ✅ |
+| Dark Mode | ✅ | ✅ |
+| Content Blocks | ✅ | ✅ |
+| Style Check (En, De, Fr) | ✅ | ✅ (+ Es) |
+| Syntax Highlight | ✅ English only | ✅ 6 languages |
+| PDF / Word / HTML Export | ✅ | ✅ |
+| Custom Templates | ✅ | ✅ |
+| iA Fonts (Mono / Duo / Quattro) | ✅ | ✅ |
+| Folding | ✅ exclusive | ❌ |
+| Dynamic Outline | ✅ exclusive | ❌ |
+| Writing Goals | ✅ exclusive | ❌ |
+| Snippets | ✅ exclusive | ❌ |
+| Authorship / AI Tracking | ❌ coming 2026 | ✅ |
+| Wikilinks | ❌ no timeline | ✅ |
+| Blog Publishing | ❌ | ✅ |
+| Global Document Search | ❌ | ✅ |
+
+**Most significant gaps for a poet's workflow:**
+
+Wikilinks (`[[document links]]`) — Mac and iOS only, no announced Windows timeline. These would allow linking between mythology entries, character references, and poem cycles.
+
+Authorship / AI Tracking — confirmed arriving on Windows in 2026. Will let Evan mark which passages were AI-assisted versus hand-composed, with visual differentiation in the editor.
+
+---
+
+## Focus Mode — the core feature for stream and for writing
+
+Focus Mode is iA Writer's signature feature. It highlights the active text and dims everything else — creating a dramatic visual effect that looks exceptional on camera and genuinely improves writing flow.
+
+### Three options
+
+**Sentence Focus** — highlights only the current sentence at full contrast (solid white in dark mode) while dimming all surrounding text to gray. The highlight shifts as the cursor moves. Most visually dramatic for streaming — viewers see exactly which words are being composed.
+
+**Paragraph Focus** — same behavior but highlights the entire active paragraph. Better for editing passes where more context is needed.
+
+**Typewriter Scrolling** — keeps the cursor vertically centered on screen at all times. Does not dim any text. Can be **combined with Sentence or Paragraph Focus** — this is the ideal streaming configuration: active line highlighted, centered, everything else dimmed.
+
+### Recommended streaming configuration
+
+Enable all three simultaneously: **Focus → Sentence** + **Typewriter Scrolling** + **Full Screen (`F11`)**. In dark mode, this creates a completely clean canvas — nothing visible except the poem and the cursor.
+
+iA recommends toggling Focus Mode **off during editing passes** — the vertical centering behavior can conflict with text selection, causing screen jumping.
+
+### Keyboard shortcuts
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| Toggle Focus Mode | `Ctrl+D` | `⌘D` |
+| Toggle Syntax Highlight | `Shift+Ctrl+D` | `⇧⌘D` |
+
+Focus Mode works identically on Windows and Mac. All three options are fully available on Windows 2.0.
+
+---
+
+## Files — plain text, portable, future-proof
+
+iA Writer saves everything as **plain-text files with Markdown formatting**. No proprietary database or format. Every file opens in any text editor (Notepad, VS Code, Obsidian). This is a core philosophical commitment — the writing belongs to the writer, not the app.
+
+### Change the default extension immediately
+
+iA Writer defaults to saving files with a **`.txt` extension**, not `.md`. First configuration step after installation: **Settings → Files → Default Extension → `.md`**. This ensures files are recognized correctly by GitHub, AI context tools, and any other Markdown-aware software.
+
+Files use **UTF-8 encoding** with full Unicode support.
+
+### Cloud sync on Windows
+
+iA Writer has no sync engine of its own — it reads and writes to local folders, and the cloud provider's desktop client handles sync. Folders are added as **Locations** in iA Writer's Library.
+
+| Cloud Service | Windows Support | Notes |
+|---------------|----------------|-------|
+| **Dropbox** | ✅ | Most reliable on Windows — recommended |
+| **OneDrive** | ✅ | Built into Windows 11, solid |
+| **Google Drive** | ✅ | Install desktop client, add folder as Location |
+| **iCloud** | ✅ | Requires iCloud for Windows app — update to latest version first. Known occasional sync failures — iA acknowledges it "works nicely, but there are annoying cases where it just fails" |
+| Any local folder | ✅ | Any File Explorer-accessible folder |
+
+**Best practice:** Use Dropbox or OneDrive for the most reliable Windows sync. Verify files have synced (check timestamps in File Explorer) before editing on another device. Never edit the same file on two devices simultaneously — version conflicts require manual resolution.
+
+---
+
+## Writing poetry in Markdown — the line break problem and how to solve it
+
+Markdown's default paragraph handling is the single biggest frustration for poets. Pressing Enter once does **nothing** — the renderer collapses single line breaks and joins lines into a paragraph. This destroys verse structure unless explicit line break syntax is used.
+
+### Three methods for line breaks within a stanza
+
+**Method 1 — Shift+Enter (fastest):** Press `Shift+Enter` at the end of each line. iA Writer automatically inserts the required trailing spaces. Invisible in source but renders correctly in preview and export. The fastest method but leaves no visible trace of the syntax.
+
+**Method 2 — Backslash `\` (best for streaming):** Type a backslash before pressing Enter. Visible to viewers on stream, making the Markdown syntax educational and transparent. Recommended for live writing. Example:
+
+```
+Do I contradict myself?\
+Very well then I contradict myself,\
+(I am large, I contain multitudes.)
+```
+
+**Method 3 — Two trailing spaces + Enter (avoid):** The original Markdown specification method. Two space characters at end of line, then Enter. The spaces are **completely invisible** in the editor. Other editors (VS Code, Sublime Text) may silently strip trailing whitespace, destroying line breaks without warning. Not recommended.
+
+### Stanza breaks
+
+Press Enter twice (blank line) between verse groups. Natural vertical spacing, no special syntax needed:
+
+```
+Roses are red,\
+Violets are blue.
+
+But the flowers have wilted,\
+And so has this poem.
+```
+
+### Page breaks between poems
+
+Use `+++` on its own line to force a page break in PDF export. Useful when exporting a full poetry collection.
+
+### Indentation for shaped verse
+
+Standard tabs create code blocks in Markdown — do not use tabs for indentation. Use HTML space entities instead:
+
+- `&emsp;` — em space (widest)
+- `&ensp;` — en space (medium)
+- `&nbsp;` — non-breaking space (narrow)
+
+Example: `&emsp;&emsp;Then spoke the hero from his throne of stone`
+
+### The "Single Return" Markdown setting — leave it off
+
+iA Writer has a setting that makes single Enter presses create paragraph breaks. Seems poet-friendly but iA warns it's "incompatible with other websites and apps that use Markdown." Enabling it means files render differently in GitHub, Obsidian, or any other Markdown tool. Leave **disabled** and use backslash or Shift+Enter instead.
+
+---
+
+## OBS configuration for streaming iA Writer
+
+No documentation exists of someone using iA Writer with OBS for live poetry streaming — E.I. Werner is a pioneer in this space. The app's design characteristics make it exceptionally well-suited for broadcast.
+
+### Why iA Writer looks exceptional on stream
+
+Dark mode + Sentence Focus + Typewriter Scrolling + full-screen creates a cinematic writing aesthetic: text on a dark background, active sentence glowing white, surrounding text faded to gray, blue cursor blinking at center-screen. Nothing else visible. iA Writer users frequently describe the effect as meditative and visually striking.
+
+### OBS source setup
+
+Use **Window Capture** (not Display Capture) and select the iA Writer window. This captures only iA Writer without exposing other desktop elements, allowing webcam and chat overlays without covering text.
+
+**Critical:** Set both OBS Base Canvas Resolution and Output Resolution to **1920×1080**. Matching resolutions prevents downscaling blur that destroys text readability.
+
+Use **Bilinear** downscale filter — it produces sharper text than Lanczos, which adds dithering that blurs fonts.
+
+Use **NVENC encoder** (AERO X16 has RTX 5070) — offloads encoding from CPU to GPU.
+
+Set to **30fps** — text content doesn't benefit from 60fps, and saved bandwidth improves per-frame quality.
+
+Set video bitrate to **4500–6000 kbps**.
+
+### iA Writer settings optimized for streaming
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| Appearance | Dark Mode | Professional; reduces eye strain for viewers |
+| Focus Mode | Sentence + Typewriter | Centers action; highlights active line |
+| Font | iA Writer Mono | Crispest text on stream |
+| Font size | As large as comfortable | Viewers watch at 720p or smaller — go bigger than feels right at desktop |
+| Characters per line | 64 | Fewer characters = larger individual characters on stream |
+| View | Full-screen (`F11`) | Removes all UI chrome |
+| Toolbar | Hidden (Settings → General → Toolbar → Never) | Clean visual |
+
+**Validation step:** Record a 30-second test clip, then watch it on a phone at 720p. If text is unreadable, increase font size further. Streaming text requires significantly larger sizes than comfortable desktop reading.
+
+### Natural clip moments when streaming iA Writer
+
+The clip is never the typing. The clip moments are: reading a completed line aloud, calling a sprint goal complete, reacting honestly to what was just written, explaining a mythology decision. iA Writer's Focus Mode makes these moments visually clean — when the cursor stops and you look at the camera, the entire frame goes quiet.
+
+---
+
+## The three fonts — and which one to use for poetry
+
+All three iA Writer fonts are modifications of **IBM Plex Mono**, redesigned by iA with custom letterforms. They are variable fonts that adjust optical weight dynamically based on font size, screen density, and light/dark mode. The fonts are **open-source on GitHub** under the SIL Open Font License and can be downloaded for use in other applications.
+
+| Font | Character widths | Character per line | Best for |
+|------|-----------------|-------------------|---------|
+| **Mono** | 1 (all equal) | Fewest | **Poetry, stream, verse composition** |
+| **Duo** | 2 (1× and 1.5×) | Medium | General prose, mixed content |
+| **Quattro** | 4 (0.5× to 1.5×) | Most | Fast reading, long-form prose |
+
+**iA Writer Mono is the correct choice for verse.** Perfect character alignment ensures indentation carries meaning — critical for structured epic poetry or any form where visual spacing matters. The deliberate typewriter pace matches the reflective rhythm of poetry composition. On stream, Mono's uniform character width produces the crispest, most readable text at any resolution.
+
+Custom fonts cannot be used in the editor — only Mono, Duo, and Quattro are available. Custom fonts can be used in Preview and export through custom HTML/CSS templates.
+
+---
+
+## Style Check and Syntax Highlight
+
+**Style Check** flags filler words, redundancies, and clichés in real time. Identified words appear **grayed out with a strikethrough** in the editor — showing how text reads without them. Double-click a struck-through word to select it for deletion. Nothing is automatically removed. Runs entirely locally — no internet required.
+
+Categories flagged: filler words ("actually," "really," "very," "just," "basically" — hundreds tracked), redundancies ("completely finished," "free gift"), clichés. Custom patterns can be created via Settings → Style Check.
+
+Available on Windows in **English, German, and French**.
+
+**Syntax Highlight** applies colors to parts of speech: adjectives brown, nouns red, adverbs purple, verbs blue, conjunctions green. Individual categories can be toggled independently. Pairs powerfully with Focus Mode — dim surrounding text, then color-code the active sentence's parts of speech.
+
+Available on Windows in **English only** (Mac supports six languages).
+
+Both features appear only in the editor. Never visible in Preview, exports, or printed documents.
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| Toggle Style Check | `Alt+Shift+Ctrl+D` | `⌥⇧⌘D` |
+| Toggle Syntax Highlight | `Shift+Ctrl+D` | `⇧⌘D` |
+
+---
+
+## Content Blocks — assembling long manuscripts from modular files
+
+Content Blocks embed the content of one file directly into another. This is the key feature for managing a long epic poetry manuscript — individual cantos, books, or mythology entries live as separate `.md` files and assemble into a master document.
+
+Syntax: place a forward slash and filename on an empty line:
+
+```
+/once-mother.md
+/once-brother.md
+/once-war.md
+```
+
+Supported file types: `.md` / `.txt` (embed full text), `.csv` (render as Markdown table), images (display inline), source code (code block).
+
+Content Blocks resolve in Preview and are included in all exports (PDF, Word, HTML, Markdown). To add: drag a file from the Library into the editor, or type `/` followed by the filename — autocomplete suggests matches.
+
+**Content Blocks are fully available on Windows.**
+
+---
+
+## Authorship — tracking AI vs. human text (coming to Windows 2026)
+
+Authorship distinguishes human-composed text from AI-generated content. Introduced in iA Writer 7, it tracks the **origin of text entry** — not AI detection algorithms. All processing is local, no text leaves the device.
+
+**How it works:** Copy text from an AI tool, right-click in iA Writer, select "Paste As" and choose the author (e.g., "Other/AI"). Existing text can be reassigned by selecting it and choosing from the Authors menu.
+
+**Visual appearance after November 2025 redesign:** AI-generated text appears in a **rainbow color gradient**. Human collaborator text appears in distinct per-author colors. Your own text stays full contrast. Reference material appears dimmed gray.
+
+Authorship metadata is stored at the end of the plain-text file, invisible in the editor. Metadata is **automatically stripped on export** — it is a writing-phase tool only.
+
+**Not available on Windows yet — confirmed arriving in 2026.** Currently Mac, iPhone, iPad only.
+
+---
+
+## Export
+
+All formats included with purchase. Nothing paywalled. Access via `Shift+Ctrl+E` (Windows) or File → Export.
+
+| Format | Notes |
+|--------|-------|
+| **PDF** | Template-styled; supports title pages, headers, footers; A4 and Letter |
+| **Microsoft Word (.docx)** | Bidirectional — can also import .docx. Bold, italic, headings, lists, links all convert correctly. Styling (fonts, colors) does not transfer — apply in Word after export. |
+| **HTML** | Raw HTML output |
+| **Markdown (.md)** | Plain Markdown source including resolved Content Blocks |
+
+**ePub is not supported.** For ePub, export to .docx and convert using Calibre or Pandoc.
+
+### Templates
+
+iA Writer ships with 5 built-in templates. Custom templates are supported as `.iatemplate` bundles (HTML + CSS + JavaScript). Template source and documentation: `github.com/iainc/iA-Writer-Templates`. A quick override: add an HTML `<style>` block directly in Markdown to adjust CSS without building a full template.
+
+---
+
+## Complete Markdown reference for iA Writer
+
+### Formatting
+
+| Element | Syntax |
+|---------|--------|
+| **Bold** | `**text**` or `__text__` |
+| *Italic* | `*text*` or `_text_` |
+| ***Bold italic*** | `***text***` |
+| ~~Strikethrough~~ | `~~text~~` |
+| ==Highlight== | `==text==` |
+| `Inline code` | `` `text` `` |
+
+### Structure
+
+| Element | Syntax |
+|---------|--------|
+| Headings 1–6 | `#` through `######` |
+| Ordered list | `1. item` |
+| Unordered list | `*`, `-`, or `+` |
+| Task list | `- [ ] item` / `- [x] done` |
+| Blockquote | `> text` |
+| Horizontal rule | `* * *` or `---` |
+
+### Line breaks and paragraphs
+
+| Element | Syntax |
+|---------|--------|
+| Paragraph break | Blank line (two returns) |
+| Line break (visible) | Backslash `\` at end of line — **recommended for poetry on stream** |
+| Line break (invisible) | `Shift+Enter` — iA Writer auto-inserts trailing spaces |
+| Page break (PDF) | `+++` on its own line |
+
+### Links and images
+
+```
+[link text](http://example.com)
+![alt text](./image.jpg)
+![alt text](http://example.com/image.jpg)
+```
+
+### Tables
+
+```
+| Header | Column 1 | Column 2 |
+|:------ |:--------:| --------:|
+| Row 1  | centered | right    |
+```
+
+### Code
+
+```
+`inline code`
+
+```swift
+code block
+```
+```
+
+### Math (LaTeX via KaTeX)
+
+```
+Inline: $e^{i\pi}+1=0$
+Block: $$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$$
+```
+
+### Superscript and subscript
+
+```
+100m^2          (simple superscript)
+y^(a+b)^        (complex superscript)
+x~z             (simple subscript)
+x~y,z~          (complex subscript)
+```
+
+### Footnotes
+
+```
+Some text.[^1]
+
+[^1]: The footnote content.
+```
+
+### Table of contents
+
+Add `{{TOC}}` anywhere in the document — iA Writer generates it from headings automatically.
+
+### Comments (Mac and iOS only)
+
+```
+// This line is a comment — only visible in the editor
+```
+
+Or use HTML comments on all platforms: `<!-- comment -->`
+
+### Metadata
+
+```yaml
+---
+Title: ONCE — The Mythology
+Author: E.I. Werner
+Date: April 2026
+---
+```
+
+---
+
+## Keyboard shortcuts — complete reference
+
+### File and navigation
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| New document | `Ctrl+N` | `⌘N` |
+| Open | `Ctrl+O` | `⌘O` |
+| Save | `Ctrl+S` | `⌘S` |
+| Quick Search | `Shift+Ctrl+O` | `⇧⌘O` |
+| Settings | `Ctrl+,` | `⌘,` |
+| Close window | `Ctrl+W` | `⌘W` |
+| Full screen | `F11` | `⌃⌘F` |
+
+### Formatting
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| Bold | `Ctrl+B` | `⌘B` |
+| Italic | `Ctrl+I` | `⌘I` |
+| Heading 1–6 | `Ctrl+1` through `Ctrl+6` | `⌘1` through `⌘6` |
+| Link | `Ctrl+K` | `⌘K` |
+| Unordered list | `Ctrl+L` | `⌘L` |
+| Ordered list | `Shift+Ctrl+L` | `⇧⌘L` |
+| Strikethrough | `Alt+Ctrl+U` | `⌥⌘U` |
+| Highlight | `Shift+Ctrl+U` | `⇧⌘U` |
+| Inline code | `Ctrl+J` | `⌘J` |
+| Code block | `Shift+Ctrl+J` | `⇧⌘J` |
+| Footnote | `Ctrl+Shift+K` | `⌃⌘K` |
+| Line break (poetry) | `Shift+Enter` | `Shift+Enter` |
+
+### View and focus
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| Toggle Focus Mode | `Ctrl+D` | `⌘D` |
+| Toggle Syntax Highlight | `Shift+Ctrl+D` | `⇧⌘D` |
+| Toggle Style Check | `Alt+Shift+Ctrl+D` | `⌥⇧⌘D` |
+| Toggle Preview | `Ctrl+R` | `⌘R` |
+| Toggle Dark/Light Mode | `Ctrl+Shift+N` | `⌃⌘N` |
+| Show/Hide Library | `Ctrl+Shift+S` | `⌃⌘S` |
+| Increase text size | `Ctrl++` | `⌘+` |
+| Decrease text size | `Ctrl+-` | `⌘-` |
+
+### Editing
+
+| Action | Windows | Mac |
+|--------|---------|-----|
+| Move line up | `Alt+Ctrl+↑` | `⌥⌘↑` |
+| Move line down | `Alt+Ctrl+↓` | `⌥⌘↓` |
+| Find | `Ctrl+F` | `⌘F` |
+| Find and Replace | `Ctrl+H` | `⌥⌘F` |
+| Export | `Shift+Ctrl+E` | `⇧⌘E` |
+| Print | `Ctrl+P` | `⌘P` |
+
+---
+
+## Priority settings checklist — do these in order
+
+1. **Settings → Files → Default Extension → `.md`** — do this first, before creating any files
+2. **Settings → General → Appearance → Dark** — non-negotiable for streaming
+3. **Settings → Editor → Font → iA Writer Mono** — correct choice for poetry and stream
+4. **Settings → Editor → Font size → increase significantly** — streaming requires oversized text
+5. **Settings → Editor → Characters per line → 64** — fewer characters = larger text per character on stream
+6. **Focus → Sentence** — enable Sentence Focus for streaming sessions
+7. **Focus → Typewriter Scrolling** — enable alongside Sentence Focus
+8. **`F11`** — go full screen before going live
+9. **Settings → General → Toolbar → Never** — remove UI chrome from stream view
+10. **Settings → Editor → Smart Quotes → on** — better typography for published poetry
+11. **Settings → Editor → Smart Dashes → on** — auto-converts `--` to em dash
+
+---
+
+## Critical notes for AI assistants
+
+**iA Writer on Windows saves as `.txt` by default.** If files appear with `.txt` extensions, the user has not changed the default. Remind them to go to Settings → Files → Default Extension → `.md`.
+
+**Wikilinks are Mac/iOS only.** Do not suggest `[[wikilink]]` syntax for Windows workflows. Use Content Blocks (`/filename.md`) for document assembly instead.
+
+**Authorship is not yet available on Windows.** Confirmed arriving in 2026. Do not suggest using it on Windows until then.
+
+**The backslash `\` line break is the best method for verse on stream.** It is visible to viewers and educational. Shift+Enter works but leaves no visible syntax. Trailing spaces are invisible and fragile.
+
+**Focus Mode works identically on Windows and Mac** — all three options (Sentence, Paragraph, Typewriter) are fully available on Windows 2.0.
+
+**iA Writer Mono is the correct font for poetry.** Do not suggest Duo or Quattro for verse composition — Mono's perfect character alignment is essential for meaningful indentation.
+
+**OBS should use Window Capture, not Display Capture**, when capturing iA Writer. Window Capture isolates the writing window cleanly.
+
+**Authorship metadata is stripped on export** — do not warn users that AI-tracking data will appear in exported PDFs or Word documents. It won't.
+
+---
+
+*E.I. Werner / Outside Inn Studios | innkeep@outsideinn.tv*
+*Verified against: iA.net documentation, iA Writer for Windows 2.0 release notes, iA support pages, Markdown Guide, and iA typography articles. Last updated: April 2026.*
