@@ -1,0 +1,419 @@
+# Canva Master Guide
+**E.I. Werner / Outside Inn Studios | April 2026**
+*Verified against live Canva session + canva.com documentation. Last updated: April 2026.*
+
+> **How to use this file:** This is the single reference for all Canva workflows used by E.I. Werner. Add it to your Claude Project and GitHub so any AI assistant has accurate, verified knowledge of Canva's capabilities. Do not give Canva advice without consulting this file first. Features and pricing verified April 2026.
+
+---
+
+## Why Canva (Not Figma)
+
+Canva is the correct tool for EIW's design production. Figma is a layout tool — it cannot apply strokes or drop shadows that follow the actual shape of a person cutout. It always uses the rectangular bounding box. **This has been confirmed by direct testing.** Canva handles person-shaped outlines and shadows natively and correctly, as verified in a live session April 2026.
+
+---
+
+## Primary Use Cases for EIW
+
+1. **YouTube thumbnails** — 1280×720px
+2. **OBS lecture slides** — 608×738px (standard B-layout) or 608×1080px (floating cam) — exported as PNG for use as Image sources in OBS
+3. **Vertical short-form content** — 1080×1920px for TikTok, Shorts, Reels (future)
+4. **Stream graphics** — Twitch overlays, panels, "Starting Soon" screens at 1920×1080px
+
+---
+
+## Free vs. Pro — Complete Feature Reference
+
+### ✅ Fully Free (No Pro Required)
+
+| Feature | Notes |
+|---|---|
+| YouTube Thumbnail canvas (1280×720px) | Preset available, many free templates |
+| Custom canvas sizes (any dimension 40px–8,000px) | Covers all EIW use cases — 608×738px, 1080×1920px etc. |
+| TikTok Video preset (1080×1920px) | Native vertical preset with free templates |
+| Instagram Reel preset (1080×1920px) | Native vertical preset with free templates |
+| Mobile Video preset (1080×1920px) | Generic vertical preset |
+| Mobile-First Presentation templates | Vertical/portrait presentation templates |
+| Present mode (Standard, Presenter View, Record, Autoplay) | All four modes free |
+| Export as JPG or PNG | Standard quality (96 DPI), no watermark |
+| Batch PNG export (all pages) | Share → Download → PNG → All pages → separate numbered files |
+| MP4 video export (up to 1080p, up to 30 min) | Respects design orientation — vertical design = vertical MP4 |
+| Text effects (Shadow, Lift, Hollow, Splice, Outline, Echo, Glitch, Neon, Curve, Background) | All 10+ built-in text effects free |
+| Drop shadow on images | Follows actual person shape, not rectangle — **verified** |
+| Outline/stroke on images | Follows actual person shape, not rectangle — **verified** |
+| Photo filters (presets) | Solar, Festive, Retro, Cali, Summer, Drama, Nordic, Epic, and more |
+| Photo adjustments (manual sliders) | Brightness, contrast, saturation, warmth, tint, vibrance, fade, highlights, shadows, sharpness, clarity, vignette |
+| Auto-adjust | One-click AI enhancement |
+| Blur | Whole-image slider, selective brush blur, Auto Focus (blurs background, keeps subject sharp) |
+| Duotone | Two-color overlay with intensity slider |
+| Image recolor | Color Edit tool, element color tiles, adjustment sliders |
+| Elements library (partial) | 3+ million free graphics, arrows, icons — filter by "Free" to avoid Pro elements |
+| Face Retouch | Smoothes skin, brightens eyes |
+| Liquify | Bloat, Pinch, Swirl distortion brushes |
+| Auto Focus | Subject detection + background blur |
+| Color Edit | Customizes highlights/shadows to match colors |
+| Page Animations | Fade, Pop, Slide, Breathe, etc. |
+| Element Animations | Animate specific elements, custom paths |
+| Speed Control (video) | Slow/fast video clips |
+| Beat Sync (video) | Auto-syncs video to music beats |
+| QR Code Generator | Built-in |
+| 5GB cloud storage | Per free account |
+| 1 Brand Kit (3 colors, 2 fonts only) | Basic branding — no custom font uploads |
+| Up to 200 Standard AI uses or 20 Premium AI uses/month | Resets monthly |
+| Twitch overlay, panel, and banner templates | Free templates at 1920×1080px |
+
+### ❌ Pro Only (Requires Paid Plan)
+
+| Feature | Why It Matters | Workaround |
+|---|---|---|
+| Background Remover (photo) | One-click AI cutout | Use **remove.bg** instead — better results anyway |
+| Background Remover (video) | No free trial at all | No good free alternative |
+| Magic Eraser | Paint over objects to remove them | Photopea (free, browser-based) |
+| Magic Edit | AI generative fill/replace | No direct free equivalent |
+| Transparent background export | PNG with transparency | Use remove.bg + chroma key in OBS (green background workaround) |
+| Magic Resize / Magic Switch | One-click resize design to new dimensions | Create new canvas at target size, manually copy-paste elements |
+| Custom font uploads | Upload TTF/OTF files | Use Canva's 3,000+ built-in fonts — most Google Fonts available natively |
+| Export quality/size slider | Scale output 0.5×–3.125× original | Standard 96 DPI export sufficient for OBS and screen display |
+| Full Brand Kit | Unlimited color palettes, logo storage, font uploads, saved templates | Brand board workaround (see below) |
+| 100GB+ cloud storage | — | 5GB free sufficient for current workflow |
+| Match and Move (transitions) | Morphing slide transitions | Not relevant |
+| Video Background Remover | Remove background from video clips | No good free alternative |
+| Magic Morph (text) | AI-stylized text from prompt | Not relevant |
+| 4K MP4 export | Up to 3840×2160 | 1080p free export sufficient |
+| Magic Shortcuts (presentations) | C for confetti, B for blur, D for drumroll | Not relevant |
+
+### ⚠️ Partially Free (Important Nuance)
+
+**Image outline on people:** The Outline effect in Shadows panel is free and follows the person shape. However, it only works correctly on images with a transparent background. Since Canva's Background Remover is Pro, you need to remove the background with remove.bg first, then upload to Canva. The outline effect itself is free — the workflow just requires the external tool.
+
+**Elements library:** Millions of elements are free. Premium elements show a crown icon. Always filter by "Free" when searching Elements to avoid accidentally placing Pro assets that will export with a watermark.
+
+**Brand Kit:** Free accounts get 1 Brand Kit with 3 colors and 2 fonts from Canva's built-in library only. No custom font uploads, no logo storage, no saved brand templates.
+
+**Present mode:** All four modes are free. Vertical designs display centered on landscape monitors with black bars (pillarboxing) on left and right sides — this is expected behavior, not a bug.
+
+**AI allowance:** Free accounts get up to 200 Standard AI uses or 20 Premium AI uses per month. Resets monthly.
+
+---
+
+## Pricing Reference (April 2026)
+
+| Plan | Price | Key additions over Free |
+|---|---|---|
+| Free | €0 | Everything listed in the Free section above |
+| Pro | ~€110/year (~€15/month) | Background Remover, Magic Resize, Magic Eraser, Magic Edit, transparent export, custom fonts, 100GB storage, 5 Brand Kits, 4K export |
+| Business | ~€170/year per person | 100 Brand Kits, 500GB storage, team admin tools, 20x AI allowance |
+
+**Is Pro worth it for EIW right now?** No. The remove.bg workaround handles the one meaningful thumbnail gap. Magic Resize is the most relevant Pro feature — it would save time when repurposing lecture slides to vertical format — but it's not urgent while the editing workflow is still being hired out. Revisit when repurposing content across formats becomes a regular task. A **30-day free trial** is available — worth using strategically to batch-resize existing designs and set up a full Brand Kit.
+
+---
+
+## Canvas Sizes Reference for EIW
+
+| Use Case | Dimensions | Preset or Custom | Notes |
+|---|---|---|---|
+| YouTube thumbnail | 1280×720px | Preset available | Search "YouTube Thumbnail" |
+| OBS lecture slide (standard) | 608×738px | Custom size | Fits B-layout 40/60 face/content ratio |
+| OBS lecture slide (floating cam) | 608×1080px | Custom size | Fills full vertical center column |
+| TikTok / Reels / Shorts | 1080×1920px | Preset available | "TikTok Video" or "Instagram Reel" |
+| Twitch overlay / panels | 1920×1080px | Preset available | Search "Twitch Overlay" |
+| Full vertical art slide | 1080×1920px | Preset available | For future standalone myth art posts |
+
+**Custom size limits (free plan):** Minimum 40×40px, maximum 8,000×8,000px. All EIW dimensions are well within these limits.
+
+---
+
+## The Thumbnail Workflow (Correct, Verified Order)
+
+### Step 1 — Shoot or source the photo
+Raw photo of subject — phone camera is fine for thumbnails.
+
+### Step 2 — Remove background with remove.bg
+- Go to **remove.bg**
+- Upload photo
+- Download the cutout PNG
+- Free, unlimited, better at hair/beards than Canva's own tool
+- **Do not use Canva's Background Remover** — it requires Pro and remove.bg is superior
+
+### Step 3 — Open Canva and start thumbnail canvas
+- Go to **canva.com**
+- Search **"YouTube Thumbnail"** → creates 1280×720px canvas automatically
+- Or: **Create a design → Custom size → 1280 × 720px**
+
+### Step 4 — Upload your cutout and set the background
+- Left panel → **Uploads** → upload remove.bg PNG
+- Drag onto canvas
+- Add a background color, gradient, or background image behind the subject
+
+### Step 5 — Apply outline (stroke) to person
+1. Click the person image
+2. Top toolbar → **Edit image**
+3. Left panel → **Effects**
+4. Scroll to **Shadows** section
+5. Click **Outline**
+6. Adjust color (white recommended) and size
+7. ✅ This follows the actual person shape — **verified working in Canva free**
+
+### Step 6 — Apply drop shadow to person
+1. Same **Effects** panel
+2. Click **Drop** under Shadows
+3. Adjust direction, blur, opacity, color
+4. ✅ This follows the actual person shape — **verified working in Canva free**
+
+### Step 7 — Add and style text
+- Left panel → **Text**
+- Select font (Cinzel, Bangers, Alegreya Sans, Playfair Display, Cormorant Garamond all available free)
+- Click text → top toolbar → **Effects** for outline and shadow on text
+- Recommended text treatment: white fill + black outline (3–6px) + directional drop shadow
+
+### Step 8 — Add arrows
+- Search **Elements** for "hand drawn arrow" — use Canva's built-in free arrows
+- Keep arrows lighter treatment than text and subjects
+
+### Step 9 — Apply visual hierarchy
+Every element should have less visual weight than the element above it:
+1. Main text — heaviest stroke and shadow
+2. Main subject (EIW) — strong outline + shadow
+3. Secondary subjects — lighter outline + shadow
+4. Arrows — lightest treatment, supporting role only
+
+### Step 10 — Export
+- Top right → **Share → Download**
+- Format: **JPG** (smaller, fine for YouTube) or **PNG** (higher quality)
+- Keep under 2MB for YouTube upload
+
+---
+
+## OBS Lecture Slide Workflow
+
+### Creating slides at 608×738px for OBS
+
+1. **Create a new design:** canva.com → **Custom size** → 608 × 738px → **Create new design**
+2. **Design all slides as pages within one Canva project.** Each page = one lecture slide. Use the page panel on the left to add, reorder, and duplicate pages.
+3. **Build a master template page first:** one slide with your standard layout (myth title zone, content zone, image zone, branding). Lock the background (Ctrl+Shift+K) before editing slide-specific content.
+4. **Duplicate the template** for each new slide: right-click the page thumbnail → Duplicate page. Or use the duplicate page button.
+5. **Batch export:** Share → Download → PNG → check "All pages" → Download. Each page exports as a separately numbered PNG file (e.g. design-page-1.png, design-page-2.png).
+6. **In OBS:** Add each PNG as an Image source in your Lecture Scene, positioned at x=656, y=342, sized at 608×738px to fit the center column below your facecam.
+
+### Key design principles for lecture slides at 608px wide
+
+- Minimum font size: 24–28pt for any text you want readable after OBS stream compression
+- Keep each slide to one core idea — myth name, one supporting image, one line of context
+- Export as PNG (not JPG) for crisp text
+- Use Cinzel or Cinzel Decorative for myth titles — appropriate for mythology aesthetic, available free
+- Use Cormorant Garamond for secondary/descriptive text — elegant and readable at small sizes
+- The Glow effect (free) on myth art images gives an otherworldly quality — worth experimenting with
+
+### Transparent overlay workaround for OBS (if needed)
+
+Since transparent PNG export is Pro-only, if you ever need a Canva element as an OBS overlay without a background:
+1. Set the background to **bright green (#00FF00)** in Canva
+2. Export as standard PNG
+3. In OBS, add as an Image source → right-click → Filters → add **Chroma Key** filter → set key color to green
+4. This removes the green background and leaves only your overlay elements visible
+
+For E.I. Werner's standard lecture slides (solid background panels), this workaround is not needed.
+
+---
+
+## Vertical Content Workflow (Short-Form / TikTok / Reels)
+
+### Creating 1080×1920px designs from scratch (free)
+
+1. **canva.com → search "TikTok Video"** or **"Instagram Reel"** — this creates a 1080×1920px canvas automatically
+2. Or: **Custom size → 1080 × 1920px**
+3. Design on the vertical canvas — all standard Canva tools available
+4. Export as **PNG** (static), **JPG** (static), or **MP4** (animated, up to 1080p, up to 30 min on free)
+
+### Repurposing lecture slides to vertical (free plan — manual)
+
+Magic Resize is Pro-only. The free manual workflow:
+1. Create a **new** 1080×1920px canvas
+2. Open your 608×738px lecture slide in another tab
+3. Copy elements and paste into the vertical canvas
+4. Rearrange for the vertical format — face/cam zone at top, content zone below
+5. Adjust font sizes up (text needs to be larger in the expanded space)
+
+This is the bottleneck on the free plan. When repurposing becomes a regular task, the Pro trial or subscription becomes worth evaluating.
+
+### MP4 video export for vertical clips
+
+Canva can export animated designs as vertical MP4 — useful for creating short video clips from slides with animations. The export respects the design orientation: a 1080×1920 design exports as a 1080×1920 MP4. Free plan: up to 1080p, up to 30 minutes.
+
+---
+
+## Brand Consistency on the Free Plan
+
+### What's available free
+- 1 Brand Kit with 3 colors and 2 fonts
+- Fonts must be chosen from Canva's built-in library (no custom uploads)
+- No logo storage, no saved brand templates
+
+### The brand board workaround
+Create a Canva document called "EIW Brand Board" containing:
+- Your exact hex color codes (copy-paste into the color picker each time)
+- Your two font names
+- Your logo uploaded as a regular image element
+- An example slide showing the correct layout and proportions
+
+Reference this document whenever starting a new design. Enter hex codes manually in the color picker — Canva accepts direct hex input. Use `Ctrl+Alt+C` (copy style) and `Ctrl+Alt+V` (paste style) to propagate consistent text treatment across elements.
+
+### When to upgrade for brand consistency
+If you find yourself manually re-entering brand colors and fonts across 20+ designs, or if a hired editor needs consistent brand assets to work from, Pro's full Brand Kit becomes worth the cost. The 30-day trial is the right way to test this.
+
+---
+
+## Complete Effects Reference
+
+### Text Effects (select text → Effects in toolbar)
+
+| Effect | What It Does | Free? |
+|---|---|---|
+| Shadow | Customizable drop shadow behind text | ✅ Free |
+| Lift | Soft shadow under entire text block, elevated look | ✅ Free |
+| Hollow | Removes fill, shows only letter outlines | ✅ Free |
+| Splice | Hollow text + colored offset shadow/inner fill | ✅ Free |
+| Outline | Border around letters, adjustable thickness and color | ✅ Free |
+| Echo | Repeating ghost-like outline effect | ✅ Free |
+| Glitch | Chromatic aberration / futuristic glitch look | ✅ Free |
+| Neon | Glowing neon-tube appearance | ✅ Free |
+| Curve | Bends text along a path, adjustable radius | ✅ Free |
+| Background | Color block behind text, adjustable corners and padding | ✅ Free |
+| Magic Morph | AI-generated stylized text from text prompt | ❌ Pro |
+
+### Photo/Image Effects (select image → Edit image → Effects)
+
+| Effect | What It Does | Free? |
+|---|---|---|
+| Drop (Shadow) | Directional shadow, follows person shape | ✅ Free |
+| Glow (Shadow) | Soft glow around subject — good for myth art | ✅ Free |
+| Outline (Shadow) | Solid border following person shape — the stroke effect | ✅ Free |
+| Curved (Shadow) | Shadow that curves beneath subject | ✅ Free |
+| Page Lift (Shadow) | Shadow suggesting page/photo curl | ✅ Free |
+| Duotone | Two-color high-contrast overlay | ✅ Free |
+| Auto Focus | Subject detection + background blur | ✅ Free |
+| Blur | Whole-image or selective brush blur | ✅ Free |
+| Face Retouch | Skin smoothing, eye brightening | ✅ Free |
+| Liquify | Bloat, Pinch, Swirl distortion | ✅ Free |
+| Color Edit | Highlights/shadows color customization | ✅ Free |
+| Filters (presets) | One-click color grading | ✅ Free |
+| Manual Adjustments | Brightness, contrast, saturation, warmth, etc. | ✅ Free |
+| Background Remover | One-click AI background removal | ❌ Pro |
+| Magic Eraser | Paint to remove unwanted objects | ❌ Pro |
+| Magic Edit | AI generative fill and replace | ❌ Pro |
+
+### Animation Effects
+
+| Effect | What It Does | Free? |
+|---|---|---|
+| Page Animations | Animates all elements on page | ✅ Free |
+| Element Animations | Animates individual elements, custom paths | ✅ Free |
+| Speed Control | Slow/fast video clips | ✅ Free |
+| Beat Sync | Auto-syncs video to music beats | ✅ Free |
+| Match and Move | Smart morphing transition between slides | ❌ Pro |
+| Video Background Remover | Removes background from video clips | ❌ Pro |
+
+---
+
+## Font Reference
+
+### Recommended for EIW mythology aesthetic (all free in Canva)
+- **Cinzel / Cinzel Decorative** — myth titles, hero text. Roman/classical feel. Correct for mythology.
+- **Cormorant Garamond** — secondary text, descriptions. Elegant, readable at small sizes.
+- **Playfair Display** — alternative heading font. Literary, sophisticated.
+- **Alegreya / Alegreya Sans** — readable body text with a literary quality.
+
+### Other available free fonts (general use)
+- Montserrat, Oswald, Bebas Neue, Anton, Raleway, Lora, Merriweather, Bangers
+
+### Uploading Custom Fonts
+- Requires **Pro** — uses Brand Kit font upload
+- Free workaround: most Google Fonts are available natively in Canva without uploading
+- Check Canva's font search before assuming a font is unavailable
+
+---
+
+## Keyboard Shortcuts
+
+| Action | Shortcut |
+|---|---|
+| Undo | Ctrl + Z |
+| Redo | Ctrl + Shift + Z |
+| Duplicate element | Ctrl + D |
+| Group elements | Ctrl + G |
+| Ungroup | Ctrl + Shift + G |
+| Copy | Ctrl + C |
+| Paste | Ctrl + V |
+| Select all | Ctrl + A |
+| Delete element | Delete key |
+| Move element (1px) | Arrow keys |
+| Move element (10px) | Shift + Arrow keys |
+| Zoom in/out | Ctrl + Plus / Minus |
+| Fit to screen | Ctrl + Shift + H |
+| Add text | T key |
+| Copy style | Ctrl + Alt + C |
+| Paste style | Ctrl + Alt + V |
+| Lock element | Ctrl + Shift + K |
+
+**High-leverage shortcuts for template workflows:**
+- `Ctrl+D` — duplicate entire slide/page including all elements. Build one master, duplicate for each myth.
+- `Ctrl+Shift+K` — lock background layer before editing foreground content. Prevents accidental moves.
+- `Ctrl+Alt+C` / `Ctrl+Alt+V` — copy style, paste style. Get text treatment right once, propagate everywhere.
+- `Ctrl+G` — group text + image elements before duplicating to keep layouts locked.
+
+---
+
+## What Canva Cannot Do
+
+- Pixel-level editing (use Photopea for precise cleanup)
+- Complex layer masking
+- Advanced typography kerning control
+- Precise layout control at the level of Figma (not needed for this workflow)
+- Transparent PNG export on free plan
+- Resize existing design to new dimensions without Pro (Magic Resize)
+- Change orientation of an existing design without rebuilding
+- Custom font uploads on free plan
+
+---
+
+## The Correct Three-Tool Stack
+
+| Tool | Role | Cost |
+|---|---|---|
+| **remove.bg** | Background removal for cutout photos | Free, unlimited |
+| **Canva** | All design work — lecture slides, thumbnails, vertical graphics, OBS assets | Free |
+| **Photopea** | Pixel-level cleanup only when necessary (hair edges etc.) | Free, browser-based |
+
+Figma is not in this stack. It was tested and does not work for person cutout strokes or shadows.
+
+---
+
+## Critical Notes for AI Assistants
+
+**Never recommend Figma for person cutout strokes or shadows.** Figma applies effects to the bounding box rectangle, not the person shape. This has been tested and confirmed. It does not work. Do not suggest workarounds — they also do not work. Canva is the correct tool.
+
+**Never assume Paint 3D is installed on Windows.** Microsoft removed it as a default app in late 2023. Always verify before suggesting.
+
+**remove.bg is the correct background removal tool**, not Canva's built-in remover. remove.bg is free, unlimited, and produces better results on hair and beards. Use it before uploading to Canva.
+
+**Canva's Outline effect on images has been verified to follow the actual person shape** in a live test in April 2026. It is not rectangular. This is the key difference from Figma.
+
+**Canva's Drop Shadow on images has been verified to follow the actual person shape** in the same live test.
+
+**Canva's "transparency" slider uses inverse logic** — 30% transparency = 70% opacity. Keep this in mind when giving shadow intensity guidance.
+
+**Elements library has a mixed free/Pro split.** Always instruct EIW to filter Elements search by "Free" to avoid placing Pro assets that will export with a watermark.
+
+**Magic Resize is Pro-only.** Do not suggest using it for free plan workflows. The manual workaround is: create new canvas at target size, copy-paste elements, rearrange.
+
+**Canva has no native orientation toggle.** You cannot convert an existing landscape design to portrait or vice versa without Magic Resize (Pro) or rebuilding manually.
+
+**Present mode is free and works with vertical designs.** A vertical design displayed in Present mode shows centered with black bars on a landscape screen — this is expected, not a bug.
+
+**Custom canvas sizes up to 8,000×8,000px are free.** The 608×738px OBS lecture slide dimensions are well within limits and require no Pro subscription.
+
+**Verify any Canva feature claims before stating them as fact.** The interface updates frequently and free vs. Pro availability changes. This guide was verified April 2026.
+
+---
+
+*E.I. Werner / Outside Inn Studios | innkeep@outsideinn.tv*
+*Verified against: live Canva session (April 2026), canva.com pricing page, canva.com help center, multiple third-party Canva feature reviews. Last updated: April 2026.*
