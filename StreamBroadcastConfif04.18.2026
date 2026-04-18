@@ -1,0 +1,250 @@
+# Streaming Configuration — Athens, April 2026
+**E.I. Werner / Outside Inn Studios**
+*Reference document for AI project context and Athens Tech Stack updates. Verified against OBS logs and live test streams on April 18, 2026.*
+
+---
+
+## Purpose of This Document
+
+This is the authoritative record of the streaming configuration used in Athens as of April 18, 2026, and — more importantly — **why it is configured this way**. The configuration is the result of a multi-week diagnostic process that isolated the root cause of persistent dropped-frame problems across multiple streams (MM09, MM10, and others). Previous configurations failed because of a specific, non-obvious OBS behavior under RTMPS. The current configuration avoids that behavior.
+
+If any AI assistant is asked to modify streaming settings in the future, this document must be read first. Settings are interdependent. Changing one without understanding why it is set that way can reintroduce the original problem.
+
+---
+
+## The Configuration (Verified Working, April 18, 2026)
+
+### OBS Stream Settings (Settings → Stream)
+
+| Field | Value |
+|---|---|
+| **Service** | Custom... |
+| **Server** | `rtmp://a.rtmp.youtube.com/live2` |
+| **Stream Key** | YouTube Default Stream Key (persistent, not per-event) |
+| **Use authentication** | Unchecked |
+
+### OBS Output Settings (Settings → Output, Advanced mode)
+
+| Field | Value |
+|---|---|
+| **Output Mode** | Advanced |
+| **Audio Track** | 1 |
+| **Audio Encoder** | FFmpeg AAC |
+| **Video Encoder** | NVIDIA NVENC H.264 |
+| **Rescale Output** | Disabled |
+| **Rate Control** | CBR (Constant Bitrate) |
+| **Bitrate** | 4500 Kbps |
+| **Keyframe interval** | 2 s |
+| **Preset** | P5: Slow (Good Quality) |
+| **Tuning** | High Quality |
+| **Multipass Mode** | Two Passes (Quarter Resolution) |
+| **Profile** | high |
+
+### OBS Video Settings (Settings → Video)
+
+| Field | Value |
+|---|---|
+| **Base Resolution** | 1920×1080 |
+| **Output Resolution** | 1920×1080 |
+| **Downscale Filter** | Bicubic |
+| **FPS** | 30 |
+
+### OBS Advanced Settings (Settings → Advanced → Network)
+
+| Field | Value |
+|---|---|
+| **Enable network optimizations** | CHECKED |
+| **Bind to IP** | Default |
+
+### Connection
+
+| Field | Value |
+|---|---|
+| **Network Interface** | Realtek PCIe GbE Family Controller (wired Ethernet, 1 Gbps link) |
+| **ISP** | OTE Greece |
+| **Plan Rating** | 195 Mbps down / 19 Mbps up |
+| **Actual Speed (fast.com, April 18, 2026)** | 95 Mbps down / 8.6 Mbps up |
+| **Latency (unloaded / loaded)** | 3 ms / 18 ms |
+
+### Simulcast Status
+
+| Platform | Status |
+|---|---|
+| **YouTube** | Active — direct plain-RTMP ingest (configuration above) |
+| **Twitch** | Suspended during Athens stay. Will relaunch from US via Aitum Multistream (free OBS plugin) when back stateside. |
+| **Restream** | Dropped. Was introducing Frankfurt relay hop and RTMPS-to-Frankfurt ingest. Not needed now that Twitch is suspended. |
+
+---
+
+## Why This Configuration — The Full Reasoning
+
+### The Core Finding: OBS Disables Network Optimizations Under RTMPS
+
+This is the single most important fact in this document.
+
+**OBS Studio is hard-coded to disable the "Enable network optimizations" setting whenever the stream service is RTMPS (TLS-encrypted RTMP over port 443).** The checkbox in OBS Advanced → Network does nothing under RTMPS. When connecting to an RTMPS endpoint, OBS writes this line to the log:
+
+```
+[rtmp stream: 'adv_stream'] Disabling network optimizations, not compatible with RTMPS
+```
+
+This is verified behavior, confirmed in the OBS source code and on the OBS forum. The OBS log file `2026-04-18_00-41-08.txt` line 340 and line 370 both contain this exact message from the last RTMPS test attempt.
+
+**Consequence when network optimizations are disabled:** OBS does not enlarge the TCP socket send buffer beyond the Windows default, which is 64 KB (65,536 bytes) on a 1 Gbps NIC.
+
+**Consequence of a 64 KB send buffer on a high-latency streaming connection:** TCP slow-start has too little window room to absorb bursty NVENC keyframes. During the first 3–5 minutes of a stream, the connection drops hundreds to thousands of frames while TCP congestion control tries to find a sustainable sending rate. The Windows TCP stack eventually auto-tunes the send buffer upward (observed growing to 4 MB by end of stream), but by then thousands of frames have already been lost.
+
+### The Diagnostic Evidence
+
+Three streams confirmed the pattern:
+
+| Stream | Protocol | Socket send buffer at start | Final dropped frames |
+|---|---|---|---|
+| MM09 (April 12) | RTMP via Restream → Frankfurt | 65,536 bytes | 37.2% |
+| MM10 (April 14) | RTMP via Restream → Frankfurt | 65,536 bytes | 43.5% |
+| Test (April 18, RTMPS) | Direct RTMPS to YouTube | 65,536 bytes | 8.3% (all front-loaded) |
+| **Test (April 18, plain RTMP)** | **Direct RTMP to YouTube** | **1,048,576 bytes (expected)** | **0% — verified across entire test stream** |
+
+The first three streams all showed the same drop pattern: heavy dropped frames at the start of the stream, tapering as the TCP send buffer auto-tuned upward. The MM09 and MM10 streams did not have "Enable network optimizations" checked, so the buffer stayed small throughout the multi-hour session. The April 18 RTMPS test had the checkbox enabled but it had no effect — confirmed by the log line quoted above.
+
+The final test on April 18 used plain RTMP (not RTMPS) with the same checkbox enabled. The result: zero dropped frames for the entire test duration. This is the working configuration.
+
+### Why Plain RTMP Instead of RTMPS
+
+YouTube supports both RTMP (port 1935, unencrypted) and RTMPS (port 443, TLS-encrypted) ingest. The only functional difference is encryption. On a trusted home network, the RTMP stream key is sent in plaintext during the handshake — a low-risk tradeoff in practice for most streamers on residential connections.
+
+Plain RTMP ingest URL for YouTube: `rtmp://a.rtmp.youtube.com/live2`
+RTMPS ingest URL for YouTube: `rtmps://a.rtmps.youtube.com/live2`
+
+Plain RTMP is the correct choice here because OBS's "Enable network optimizations" only applies to plain RTMP. That setting is what enlarges the TCP send buffer to 1 MB, which is what eliminates the drop burst.
+
+### Why OBS Does Not Expose a "YouTube - RTMP" Preset
+
+OBS's service list shows "YouTube - RTMPS" and "YouTube - HLS" but does not include a plain RTMP preset. The plain RTMP option was removed from the preset list at some point, presumably to encourage encryption. The Custom service option is how plain RTMP is configured manually. This is not a bug or workaround — it is the supported configuration path.
+
+### Why 4500 kbps (Not 6000)
+
+The Athens connection's upload capacity measured at 8.6 Mbps at time of testing (versus 19 Mbps rated). Community best practice is to keep streaming bitrate below 70% of available upload to allow headroom for TCP retransmissions, keyframe bursts, and momentary network fluctuations.
+
+- 6000 kbps = 70% utilization of 8.6 Mbps (near upper safe limit)
+- 4500 kbps = 52% utilization of 8.6 Mbps (comfortable headroom)
+
+4500 kbps is the conservative choice. YouTube's recommended bitrate for 1080p30 is 4500 kbps, so this is exactly on YouTube's target for this resolution and framerate. Quality impact is minimal for writing content where most of the frame is static text.
+
+This bitrate may be increased to 6000 kbps when back in the US on a more capable connection. For now, 4500 kbps is the right value.
+
+### Why 30 FPS (Not 60)
+
+The primary content is writing in iA Writer — mostly static text with occasional cursor movement and camera footage of the writer. 60 fps produces no perceptible quality improvement for this content type while doubling the data rate. Dropping to 30 fps reduces encoding load and gives TCP more headroom per frame to recover from any hiccup.
+
+### Why CBR (Not CQP or VBR)
+
+Live streaming platforms expect a stable bitrate for transcoding and distribution. CBR (Constant Bitrate) maintains a predictable data rate, which makes TCP behavior more predictable and reduces the chance of bursts overwhelming the send buffer. YouTube's ingest recommendation is CBR for live streams.
+
+### Why NVENC (Not x264)
+
+The AERO X16 has an RTX 5070 Laptop GPU with a single NVENC encoder. NVENC offloads encoding from CPU to GPU. This frees CPU for OBS's other work (scene compositing, audio mixing, filters) and produces encoding quality on par with x264 Medium preset at P5 (the OBS-recommended balance).
+
+### Why Keyframe Interval = 2 Seconds
+
+YouTube requires keyframes every 2 seconds (or 4 seconds maximum) for live streaming. 2 seconds is the standard choice — it enables better seeking and lower-latency playback for viewers. Lower keyframe intervals increase data rate; higher intervals increase seek latency. 2 seconds is the sweet spot.
+
+### Why "Enable network optimizations" Must Stay Checked
+
+With the Custom service set to plain RTMP, this checkbox now actually does what its name implies. It tells OBS to increase the TCP socket send buffer at stream start to 1 MB (up from the 64 KB Windows default). This is the mechanism that eliminated the drop burst. Unchecking it would revert the stream to the same failing behavior seen in MM09 and MM10.
+
+### Why Twitch Is Suspended (For Now)
+
+Historical data: Twitch contributed approximately 2 live viewers out of 26 on MM10. Some Twitch chat activity was from viewer-sale bots, not real viewers. Simulcasting to Twitch during the Athens stay was requiring Restream as a relay, which added a Frankfurt hop and its own ingest characteristics — complicating diagnostics without delivering meaningful audience value.
+
+When back in the US, Twitch will be relaunched using **Aitum Multistream**, a free OBS plugin that handles simulcast locally without a third-party relay. The RTX 5070's single NVENC encoder can handle 2× 1080p H.264 outputs simultaneously. This eliminates Restream entirely and keeps both YouTube and Twitch connections under OBS's direct control.
+
+---
+
+## How to Verify This Configuration Is Working
+
+### Log Check (Required for Every New Configuration Change)
+
+After starting a stream, within 30 seconds:
+
+1. Open File Explorer and navigate to `%APPDATA%\obs-studio\logs\`
+2. Open the newest `.txt` file
+3. Search (Ctrl+F) for `Socket send buffer`
+
+Two things to verify:
+
+- **The socket send buffer value must be much larger than 65536.** On a correctly-configured plain RTMP connection with optimizations enabled, this should read approximately `Socket send buffer is 1048576 bytes` (1 MB) or larger.
+- **The log must NOT contain the line** `Disabling network optimizations, not compatible with RTMPS`. If this line appears, the service is still RTMPS and the fix is not applied.
+
+### Stats Check (Runtime Monitoring)
+
+OBS Stats window should show:
+
+- **Dropped Frames (Network):** Near 0% throughout the stream. The front-loaded burst pattern (hundreds of drops in the first 3–5 minutes) should not occur.
+- **Bitrate:** Stable at or very near the 4500 kbps target.
+- **CPU, Encoding lag, Rendering lag:** All near 0%.
+
+If drops begin accumulating steadily mid-stream (not just at the start), the issue is different from the one this document solves — likely ISP-level congestion or a true bandwidth problem. Investigate separately.
+
+---
+
+## Relationship to Prior Hardware and Software Documentation
+
+This document supersedes earlier streaming guidance in `AthensTechStack_April2026.md` in the following ways:
+
+1. **Stream Service** — previously listed as RTMPS direct-to-YouTube. Now plain RTMP via Custom service.
+2. **Streaming Bitrate** — previously targeted 6000 kbps. Now 4500 kbps for Athens operation.
+3. **Restream** — previously the simulcast mechanism for YouTube + Twitch. Now unused; Twitch suspended for the Athens stay.
+4. **Simulcasting note** — previously described as YouTube + Twitch via OBS multistream through Restream. Now YouTube-only during Athens.
+
+The hardware stack, Anker hub routing, cable specifications, power configuration, and display setup in the existing Athens Tech Stack document are unchanged and remain correct.
+
+---
+
+## What NOT to Do
+
+The following changes would reintroduce the original drop problem and should not be made without a fresh diagnostic:
+
+- **Do not switch Service back to "YouTube - RTMPS."** This disables network optimizations silently.
+- **Do not uncheck "Enable network optimizations."** This leaves the TCP send buffer at 64 KB.
+- **Do not raise bitrate above 6000 kbps on the current Athens connection.** Upload capacity is marginal at 8.6 Mbps.
+- **Do not reintroduce Restream unless a confirmed need arises.** It adds a relay hop and its own ingest server characteristics.
+- **Do not install Source Record plugin (exeldro/obs-source-record version 0.4.8)** on the current OBS 32.1.1 + Windows 11 25H2 + RTX 5070 combination. Confirmed to cause OBS crash on stream start via `source-record.dll!start_file_output_task` triggering NVENC init failure. Plugin files deleted from `C:\Program Files\obs-studio\obs-plugins\64bit\` on April 18, 2026.
+
+---
+
+## What Needs To Be Re-Evaluated When Back In The US
+
+1. **Bitrate.** US connection will likely support 6000 kbps comfortably. Revisit the 70% rule against actual measured upload capacity.
+2. **Twitch simulcast via Aitum Multistream.** Install, configure, test. Verify the single RTX 5070 NVENC handles 2× 1080p H.264 outputs cleanly.
+3. **Twitch ingest server.** Use TwitchTest (r1ch.net) to identify best US ingest — likely `live-iad.twitch.tv` (Ashburn) from US East coast.
+4. **Plain RTMP vs RTMPS.** With a better connection, the drop burst under RTMPS may become tolerable. If so, RTMPS becomes the cleaner choice for stream-key security. Re-verify by checking the first 5 minutes of any RTMPS test stream on the new connection — if drops stay near zero, RTMPS is fine. If they match the Athens pattern, stay on plain RTMP.
+5. **Keyframe interval, preset, multipass.** All unlikely to need changing, but worth confirming on new hardware network conditions.
+
+---
+
+## Known Facts About OBS Behavior (For Future AI Reference)
+
+These are verified, testable facts about OBS 32.1.1 that future AI assistants should know when giving streaming advice:
+
+1. **"Enable network optimizations" applies only to plain RTMP and HTTP outputs.** It is silently disabled on RTMPS. Documented in OBS logs as `Disabling network optimizations, not compatible with RTMPS`.
+2. **Default Windows TCP send buffer on a 1 Gbps NIC is 65,536 bytes (64 KB).** OBS logs this as `Socket send buffer is 65536 bytes` when optimizations are not applied.
+3. **With optimizations enabled on plain RTMP, OBS enlarges the socket send buffer to approximately 1 MB.** This is logged as `Socket send buffer is 1048576 bytes` or similar.
+4. **The Windows TCP stack does auto-tune the send buffer upward over time** (observed growing to 4 MB over a 20-minute stream). However, this happens too slowly to prevent the initial drop burst on a high-latency streaming connection.
+5. **OBS's service preset list includes "YouTube - RTMPS" and "YouTube - HLS" but not "YouTube - RTMP."** Plain RTMP to YouTube requires the Custom service option with manual server URL entry.
+6. **OBS crashes on stream start in specific plugin/driver/OS combinations.** The Source Record plugin 0.4.8 is known to crash on OBS 32.1.1 + Win11 25H2 + RTX 5070 via NVENC init conflict.
+
+---
+
+## References
+
+- OBS Studio source and forum: RTMPS network optimization disabling is documented behavior.
+- Microsoft TCP tuning documentation: 64 KB default TCP window on 1 Gbps interfaces.
+- YouTube Live streaming documentation: supports both RTMP (port 1935) and RTMPS (port 443) with equivalent functionality except encryption.
+- Diagnostic logs: `2026-04-12` (MM09), `2026-04-14` (MM10), `2026-04-18_00-41-08` (failed RTMPS test), `2026-04-18` (successful plain-RTMP test).
+- Live test stream, April 18, 2026: 0 dropped frames across test duration, verified via OBS Stats.
+
+---
+
+*E.I. Werner / Outside Inn Studios | innkeep@outsideinn.tv*
+*Created April 18, 2026, after resolution of multi-week dropped-frame diagnostic. Update when streaming location, hardware, or protocol choice changes.*
