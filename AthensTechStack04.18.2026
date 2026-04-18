@@ -1,0 +1,389 @@
+# Athens Tech Kit
+**E.I. Werner / Outside Inn Studios | Mar–May 2026 | Living Document**
+
+> Single reference for all hardware and software in Athens. Optimized for Notion, GitHub, and AI project context. Update this file when anything changes.
+
+---
+
+## Primary Machine
+
+| Field | Value |
+|---|---|
+| **Device** | GIGABYTE AERO X16 1WH — OutsideInnHQ |
+| **CPU** | AMD Ryzen AI 7 350 (8c/16t, up to 5GHz) |
+| **GPU** | NVIDIA RTX 5070 Laptop (8GB GDDR7) — driver 595.79 WHQL |
+| **RAM** | 32GB DDR5 5600MHz — memory diagnostic clean ✅ |
+| **OS** | Windows 11 Home 64-bit |
+| **Display** | 16" IPS 2560×1600 165Hz (16:10) |
+| **Ports** | 1× USB4/USB-C (DP 1.4, PD 3.0), 1× HDMI 2.1, 2× USB-A 3.2, 1× USB-A 2.0, RJ45 |
+
+> ⚠️ Only one USB-C port on device. Anker hub occupies it during streaming.
+> ⚠️ OBS canvas mismatch: laptop is 2560×1600 (16:10), OBS is 1920×1080 (16:9). Workaround: ZenScreen as broadcast display via DisplayLink, OR drop Windows res to 1920×1080 before streaming.
+> ⚠️ GiMATE must stay in **Optimus mode**. ECO mode disables the dGPU entirely — never use it.
+
+---
+
+## Active Streaming Stack
+
+| Item | Role | Status |
+|---|---|---|
+| **Anker 341 USB-C Hub (7-in-1)** | Primary hub — all peripherals route through here | ✅ Active |
+| **Ethernet cable** | Direct wired connection — laptop RJ45 → apartment router | ✅ Active |
+| **ASUS ZenScreen MB16ACV** | Dedicated broadcast display — 1920×1080 native, eliminates res mismatch | ✅ Active via DisplayLink |
+| **Elgato Facecam MK.2** | Primary stream camera — TheCatCamera in OBS | ✅ Active |
+| **Blue Yeti Nano** | Primary stream mic | ✅ Active |
+| **Elgato Key Light Neo** | Key light — WiFi controlled, clips to ZenScreen | ✅ Active |
+| **Elgato Stream Deck +** | Scene switching, audio control, go-live | ✅ Active |
+| **Razer Naga Mouse** | Primary mouse — wired USB-A | ✅ Active |
+| **iPad** | Chat monitor — WiFi only, uses zero laptop ports | ✅ Active |
+| **SanDisk 2TB Extreme SSD** | All stream source files at `D:\StreamSourceFiles\` | ✅ Active |
+
+---
+
+## Available But Not Currently In Use
+
+| Item | Role | Notes |
+|---|---|---|
+| **GL.iNet GL-MT6000 Router** | Primary router — WAN in, LAN out, WAN2 failover | Available — currently plugging ethernet directly |
+| **AT&T Hotspot + Greek SIM** | 5G backup internet via WAN2 on router | Available — not needed while direct ethernet is stable |
+| **TalentCell Mini UPS (97.2Wh)** | Keeps router alive on power drops | Available — not needed without router in use |
+| **BENFEI USB-C to Ethernet Adapter** | Backup ethernet path | Available — backup only |
+| **Insignia USB-C Hub** | Backup hub — HDMI + 2× USB-A + USB-C | Available — backup only |
+| **Anker 737 Power Bank (88.8Wh)** | Laptop backup power on the go | Available |
+| **ELECOM NESTOUT Power Bank** | Additional backup power | Available |
+| **GoPro HERO13 Black** | BTS / travel b-roll / IRL | Available |
+| **GoPro Official Selfie Stick** | Handheld b-roll | Available |
+| **GoPro Tripod** | Static shots | Available |
+| **Sony WH-1000XM5** | Monitoring + gaming + travel | Available |
+| **Samsung T9 2TB SSD** | Backup — irreplaceable data | Available |
+| **SanDisk 256GB microSD** | GoPro card | Available |
+
+---
+
+## Internet
+
+| Field | Value |
+|---|---|
+| **Primary** | Flatio apartment wired — 195/19 Mbps plan rating |
+| **Actual (fast.com, April 18, 2026)** | 95 Mbps down / 8.6 Mbps up — latency 3ms unloaded / 18ms loaded |
+| **Connection method** | Ethernet cable → laptop RJ45 port directly |
+| **Backup** | AT&T hotspot + Greek SIM (available, not active) |
+
+> Always wired when streaming. Never stream over WiFi.
+> ⚠️ Actual upload (8.6 Mbps) is ~45% of rated. Stream bitrate capped at 4500 kbps for ~52% utilization — safe headroom below the community 70% ceiling guideline.
+
+---
+
+## Hub Layout (Anker 341, during streams)
+
+| Hub Port | Connected Device | Cable |
+|---|---|---|
+| USB-C PD | Anker 100W GaN charger (wall) | USB-C to USB-C |
+| USB-A (3.0) | Elgato Facecam MK.2 | USB-C to USB-A 3.0 — **must be USB 3.0** for uncompressed 1080p60 |
+| USB-A (3.0) | Blue Yeti Nano | Micro-USB to USB-A — USB 2.0 sufficient |
+| USB-A (3.0) | ZenScreen MB16ACV | USB-C to USB-A — DisplayLink driver required |
+| USB-A (3.0) | Elgato Stream Deck + | USB-C to USB-A |
+
+> ⚠️ Hub does NOT support DP Alt Mode — ZenScreen must use USB-A + DisplayLink, not USB-C.
+> ⚠️ Hub HDMI is 4K@30Hz only and not currently in use.
+
+---
+
+## Cable Reference
+
+### Elgato Facecam MK.2
+| Field | Value |
+|---|---|
+| **Connector at camera** | USB-C |
+| **Connector at hub** | USB-A |
+| **Required standard** | USB 3.0 (5 Gbps) minimum — **non-negotiable for uncompressed output** |
+| **USB 2.0 behavior** | Falls back to MJPEG compressed — silent quality downgrade, no error shown |
+| **Included cable** | USB-C to USB-A, 2m, braided |
+| **Max safe length** | 3m (passive) |
+
+### ASUS ZenScreen MB16ACV
+| Field | Value |
+|---|---|
+| **Connector at monitor** | USB-C |
+| **Current connection method** | USB-C to USB-A → hub USB-A port → DisplayLink driver |
+| **Required standard** | USB 3.0 for DisplayLink mode |
+| **Driver required** | Yes — DisplayLink, already installed ✅ |
+| **Alternative (not currently used)** | USB-C direct to laptop USB-C port (DP Alt Mode, no driver needed) — takes only USB-C port |
+| **Included cables** | USB-C to USB-C (~1m) + USB-C to USB-A (~1m) |
+
+### Blue Yeti Nano
+| Field | Value |
+|---|---|
+| **Connector at mic** | **Micro-USB** (not Mini-USB — common mistake) |
+| **Connector at hub** | USB-A |
+| **Required standard** | USB 2.0 — fully sufficient for 24-bit/48kHz audio |
+| **Must be** | Data + charge cable — charge-only cables won't transmit audio |
+| **Included cable** | Micro-USB to USB-A, ~6ft, with ferrite choke |
+| **Max practical length** | ~3m before electrical noise risk |
+
+---
+
+## Display Setup
+
+| Item | Role | Connection |
+|---|---|---|
+| **AERO X16 built-in** (2560×1600) | OBS dashboard + monitoring | — |
+| **ASUS ZenScreen MB16ACV** (1920×1080) | Broadcast display — writing content and lecture slides | USB-C to USB-A → Anker hub → DisplayLink |
+
+**Camera placement:** Elgato Facecam MK.2 mounts on top of ZenScreen — maintains eye contact with viewers while writing or presenting.
+
+**OBS capture method:** Display Capture pointed at ZenScreen. Do NOT use Game Capture — it injects into WoW's DirectX pipeline and worsens GPU crashes.
+
+---
+
+## Power & Adapters
+
+| Item | Role |
+|---|---|
+| **Anker 100W GaN Charger (3-port)** | Primary wall charger — feeds hub PD port at 100W |
+| **European Type C Adapters ×2** | US → EU plug — correct for Greece (230V) |
+
+> ⚠️ All charger bricks confirmed Input: 100-240V — safe for Greek outlets.
+
+---
+
+## WoW + OBS Fixes (Confirmed March 17, 2026)
+
+| Issue | Fix | Status |
+|---|---|---|
+| WoW crash on transmog/Warband UI | `-d3d11` in Battle.net Additional Command Line Arguments | ✅ Fixed |
+| OBS Game Capture hooking into WoW DX pipeline | Switched to Window Capture, WoW in Borderless Windowed | ✅ Fixed |
+| Daily BSODs — `nvlddmkm.sys_Blackwell` | DDU clean install → NVIDIA 595.79 WHQL | ✅ Fixed |
+| GiMATE ECO mode disabling dGPU | Set to Optimus mode permanently | ✅ Fixed |
+| OBS resolution mismatch | ZenScreen as dedicated broadcast display (1920×1080 native) | ✅ Fixed |
+
+---
+
+## Software Stack (Stream)
+
+| Tool | Role | Status |
+|---|---|---|
+| **OBS Studio** | Primary streaming software (v32.1.1) — two scenes: Writing Scene and Lecture Scene | ✅ Active |
+| **Aitum Vertical OBS Plugin** | Free plugin — runs passive 9:16 vertical canvas alongside 16:9 stream. Backtrack hotkey saves last 60 seconds pre-formatted for Shorts/TikTok | Install (pending horizontal scene construction) |
+| **iA Writer** | Primary writing tool on stream — Focus Mode, dark canvas, narrow centered column. Cinematic for verse. Saves as plain .txt/.md files. Purchased for Windows. | ✅ Active |
+| **Mechvibes** | Keyboard sound overlay — warm mechanical switch sounds on every keystroke for cozy stream atmosphere. Routes through OBS desktop audio capture. | Install (pending) |
+| **Canva** | Lecture slide visuals — designed at 608×930px for standard B-layout, 608×1080px for floating cam art slides | ✅ Active |
+| **Notion** | Goals panel on stream canvas during writing sprints. Worldbuilding, planning, myth research. | ✅ Active |
+| **StreamLadder (free tier)** | Converts clips to vertical format. Bridge tool until editor is hired. | Deferred — priority returns alongside Twitch relaunch |
+| **Elgato Stream Deck +** | Scene switching: Writing Scene ↔ Lecture Scene ↔ Floating Cam Scene | ✅ Active |
+
+**Ruled out:**
+- Nexus Clips: 1.7 stars Trustpilot, strict no-refund policy, buggy uploads. Do not use.
+- DaVinci Resolve: Not Evan's job. Hire it out.
+- Source Record Plugin 0.4.8 (exeldro): Confirmed to crash OBS 32.1.1 on Win11 25H2 + RTX 5070 via NVENC init conflict. Plugin files deleted from `C:\Program Files\obs-studio\obs-plugins\64bit\` on April 18, 2026.
+- Restream: Dropped during Athens stay. Previously used for YouTube + Twitch simulcast — added a Frankfurt relay hop that complicated drop-frame diagnosis. US relaunch will use Aitum Multistream instead (no third-party relay).
+
+---
+
+## OBS Streaming Configuration (Locked April 18, 2026)
+
+> **Status during Athens stay:** YouTube-only direct ingest. Twitch suspended until US relaunch. No Restream.
+
+### The Critical Finding — Why Plain RTMP (Not RTMPS)
+
+OBS Studio is hard-coded to silently disable the "Enable network optimizations" setting whenever the stream service is RTMPS. This is verified behavior in OBS logs:
+
+```
+[rtmp stream: 'adv_stream'] Disabling network optimizations, not compatible with RTMPS
+```
+
+Without network optimizations, the Windows TCP socket send buffer stays at the 64 KB default (`Socket send buffer is 65536 bytes`). On a high-latency streaming path like Athens → YouTube (~50–70ms RTT), 64 KB is too small to absorb bursty NVENC keyframes during TCP slow-start, causing a 3–5 minute burst of dropped frames at every stream start.
+
+Multi-week diagnostic confirmed this as the root cause of the MM09 (37.2%) and MM10 (43.5%) dropped-frame patterns. Solution: stream over plain RTMP (not RTMPS) via the Custom service option, so network optimizations actually apply. On plain RTMP with optimizations enabled, OBS enlarges the send buffer to ~1 MB on connect — enough for clean delivery from frame one.
+
+**Verified result (April 18, 2026 test stream):** 0 dropped frames across the entire test, versus MM09/MM10's 37–43% and a prior RTMPS test's 8.3%.
+
+### Settings — Verified Working
+
+**Settings → Stream:**
+
+| Field | Value |
+|---|---|
+| Service | Custom... |
+| Server | `rtmp://a.rtmp.youtube.com/live2` |
+| Stream Key | YouTube Default Stream Key (persistent, not per-event) |
+| Use authentication | Unchecked |
+
+**Settings → Output (Advanced mode, Streaming tab):**
+
+| Field | Value |
+|---|---|
+| Video Encoder | NVIDIA NVENC H.264 |
+| Audio Encoder | FFmpeg AAC |
+| Audio Track | 1 |
+| Rescale Output | Disabled |
+| Rate Control | CBR (Constant Bitrate) |
+| Bitrate | 4500 Kbps |
+| Keyframe interval | 2 s |
+| Preset | P5: Slow (Good Quality) |
+| Tuning | High Quality |
+| Multipass Mode | Two Passes (Quarter Resolution) |
+| Profile | high |
+
+**Settings → Video:**
+
+| Field | Value |
+|---|---|
+| Base Resolution | 1920×1080 |
+| Output Resolution | 1920×1080 |
+| Downscale Filter | Bicubic |
+| FPS | 30 |
+
+**Settings → Advanced → Network:**
+
+| Field | Value |
+|---|---|
+| Enable network optimizations | ✅ CHECKED (must stay checked) |
+| Bind to IP | Default |
+
+### Why These Values
+
+- **Plain RTMP, not RTMPS:** Only way to get network optimizations to actually apply. See Critical Finding above. OBS's service preset list does not include a "YouTube - RTMP" option — plain RTMP requires the Custom service with manually entered server URL.
+- **4500 kbps CBR:** Matches YouTube's recommended bitrate for 1080p30. ~52% utilization of measured 8.6 Mbps upload — leaves real headroom. 6000 kbps was too close to the ceiling and risked drops under any network fluctuation.
+- **30 FPS (not 60):** Writing content is mostly static text. 60 fps doubles data rate without quality benefit and leaves less per-frame recovery headroom.
+- **CBR (not VBR/CQP):** Live platforms expect stable bitrate. Predictable data rate keeps TCP behavior predictable and avoids bursts overwhelming the send buffer.
+- **NVENC H.264 (not x264):** Offloads encoding from CPU to GPU. RTX 5070 has one NVENC — sufficient for single-platform streaming now, and can handle 2× 1080p H.264 when Twitch relaunches via Aitum Multistream.
+- **Keyframe 2s:** YouTube requirement. Enables viewer seeking and low-latency playback.
+- **Network optimizations CHECKED:** With plain RTMP, this is the mechanism that enlarges the TCP send buffer to ~1 MB instead of 64 KB. Non-negotiable for drop-free streaming.
+
+### Verification Procedure (Run After Any Config Change)
+
+**Log check — within 30 seconds of going live:**
+1. Navigate to `%APPDATA%\obs-studio\logs\`
+2. Open the newest `.txt` file
+3. Ctrl+F for `Socket send buffer`
+4. ✅ Expected: `Socket send buffer is 1048576 bytes` (or larger — 1 MB minimum)
+5. ❌ Problem: `Socket send buffer is 65536 bytes` — optimizations didn't apply, stop and diagnose
+6. Also verify log does NOT contain `Disabling network optimizations, not compatible with RTMPS`
+
+**Runtime check — OBS Stats window:**
+- Dropped Frames (Network) should stay near 0% throughout
+- Bitrate stable near 4500 kbps target
+- CPU / Encoding lag / Rendering lag all near 0%
+
+### What NOT to Do
+
+- ❌ Do not switch Service back to "YouTube - RTMPS" — reintroduces the original drop problem
+- ❌ Do not uncheck "Enable network optimizations" — leaves send buffer at 64 KB
+- ❌ Do not raise bitrate above 6000 kbps on the current Athens connection — upload capacity is marginal at 8.6 Mbps
+- ❌ Do not reintroduce Restream during Athens stay — adds a relay hop and its own ingest characteristics
+- ❌ Do not install Source Record plugin 0.4.8 — crashes OBS on current hardware/OS combination
+
+### US Relaunch Reconfiguration Checklist
+
+When back stateside, re-evaluate streaming config in this order:
+
+1. **Measure actual upload capacity** on the new connection (fast.com, speedtest.net, multiple tests across times of day)
+2. **Raise bitrate if capacity allows** — 6000 kbps likely fine on typical US residential
+3. **Install Aitum Multistream** (free OBS plugin) for YouTube + Twitch simulcast without a third-party relay
+4. **Identify best Twitch ingest** via TwitchTest (r1ch.net) — likely `live-iad.twitch.tv` (Ashburn) from US East coast
+5. **Retry RTMPS** — if first 5 minutes stay clean (drops under 1%), use RTMPS for stream-key security. If drops match the Athens pattern, stay on plain RTMP.
+6. **Confirm Aitum Vertical and Mechvibes are installed and working** once horizontal scenes are built
+
+---
+
+## OBS Canvas Layout (Locked April 7, 2026)
+
+**Standard canvas:** 1920×1080 (16:9)
+**Vertical safe zone:** Center 608 pixels (x=656 to x=1264). Everything critical lives here. Side panels are visible to horizontal viewers only and disappear in vertical clips.
+**Universal ratio:** 40% face / 60% content — applied to both scenes.
+
+### Writing Scene
+| Zone | Element | Dimensions | Position |
+|---|---|---|---|
+| Safe zone top | Facecam | 608 × 342px | Centered horizontally |
+| Safe zone bottom | iA Writer window | 608 × 738px | Centered, below facecam |
+| Left side panel | Notion goals panel | 656px wide | Horizontal viewers only |
+| Right side panel | Branding, stream info, timer | 656px wide | Horizontal viewers only |
+
+### Lecture Scene
+| Zone | Element | Dimensions | Position |
+|---|---|---|---|
+| Safe zone top | Facecam | 608 × 342px | Centered horizontally |
+| Safe zone bottom | Canva slide | 608 × 738px | Centered, below facecam |
+| Left side panel | Stream info / branding | 656px wide | Horizontal viewers only |
+| Right side panel | Branding / stream info | 656px wide | Horizontal viewers only |
+
+### Floating Cam Scene (for myth art)
+| Zone | Element | Dimensions | Position |
+|---|---|---|---|
+| Full safe zone | Canva slide or myth art | 608 × 1080px | Full vertical frame |
+| Overlay | Small circular facecam | ~200 × 200px | Top corner |
+
+> Switch to Floating Cam when showing standout myth art that deserves the full frame. Switch back to Lecture Scene for commentary.
+
+**Canva slide dimensions:**
+- Standard B-layout slide: 608 × 930px
+- Full-frame art slide: 608 × 1080px
+
+---
+
+## Stream Format (Locked April 7, 2026)
+
+### Act 1 — Pre-Game Lecture
+- Duration: 5–30 minutes depending on the myth. Let the material dictate.
+- Content: What myth is being worked on, the creative problem being solved, relevant cosmological context
+- Visuals: Canva lecture slides in the bottom content zone
+- Scene: Lecture Scene
+- Clip type: Mythology explainer / WriterTok education content
+
+### Act 2 — Writing Sprint
+- Duration: 15 minutes per sprint
+- Goals: Stated clearly at the top of each sprint, visible on Notion goals panel throughout
+- Writing environment: iA Writer Focus Mode — dark mode, narrow centered column
+- Atmosphere: Cozy, quiet, focused. Mechvibes keyboard sounds. Outside Inn lo-fi music playing softly underneath.
+- Scene: Writing Scene
+- After each sprint: Debrief with community. Did the goal get met? Read what was written. React honestly.
+- Clip type: Before/after craft clip, reading aloud, emotional reaction
+
+### Act 3 — Debrief
+- Verdict on session goals
+- Read the best lines aloud
+- Discuss what worked, what didn't, what comes next
+- Clip type: Declaration moment, craft insight, honest reaction
+
+### Gaming
+> Bonus content only. Never a scheduled segment. If it happens, it happens after writing is done. WoW or variety — never locked to a single game.
+
+---
+
+## VPS / Lo-Fi Radio
+
+| Field | Value |
+|---|---|
+| **Provider** | DigitalOcean (Ubuntu, 1GB RAM) |
+| **Function** | FFmpeg looping `HoldtLoop.mp4` → Restream → Outside Inn YouTube channel 24/7 |
+| **Auto-restart** | ✅ Installed and confirmed — shell loop wrapper in place |
+| **Runtime** | Running 2+ weeks stable as of April 2026 |
+| **Views** | Practically none — parked, not a current priority |
+| **Priority** | Low — stable, available for future activation when strategy calls for it |
+
+---
+
+## Notes for AI Context
+
+- **Streaming machine:** AERO X16 (AMD Ryzen AI 7 350, RTX 5070, 32GB DDR5, Windows 11 Home 25H2)
+- **Channel name:** E.I. Werner — locked across all platforms (YouTube, Twitch, TikTok, Instagram). Outside Inn is the community and aesthetic layer, not a separate channel.
+- **YouTube (@EIWerner):** Live. Streaming via OBS → direct plain-RTMP ingest at `rtmp://a.rtmp.youtube.com/live2` (NOT RTMPS — see OBS Streaming Configuration section for why). 4500 kbps CBR, 1080p30, NVENC H.264.
+- **Twitch:** **Suspended during Athens stay.** Will relaunch from US via Aitum Multistream plugin (no third-party relay). Prior Athens streams via Restream had minimal Twitch audience (2 viewers of 26 on MM10).
+- **Simulcasting:** None during Athens. YouTube-only direct. Relaunches as YouTube + Twitch via Aitum Multistream when back stateside.
+- **Lo-fi radio:** DigitalOcean VPS → Restream → Outside Inn YouTube channel (24/7, auto-restart installed). Parked — not a priority. Note: this Restream usage is for the lo-fi radio feed only and is separate from the live streaming stack (which does not use Restream).
+- **Internet:** Direct ethernet to apartment router. Plan rated 195/19 Mbps; measured 95/8.6 Mbps (April 18, 2026). Bitrate sized accordingly.
+- **Router stack:** GL-MT6000 + TalentCell UPS + hotspot available but not currently in use.
+- **Chat monitor:** iPad over WiFi — uses zero laptop ports.
+- **All stream source files:** SanDisk 2TB Extreme SSD at `D:\StreamSourceFiles\`
+- **Writing tool on stream:** iA Writer in Focus Mode — plain text, dark mode, narrow centered column. Not Notion for actual drafting. Purchased for Windows.
+- **Vertical capture:** Aitum Vertical OBS plugin — 9:16 canvas alongside 16:9 stream. Backtrack hotkey saves last 60 seconds pre-formatted for clips. **Install pending** horizontal scene construction.
+- **Clip workflow:** Deferred with Twitch. Returns when editor is hired or Twitch relaunches.
+- **Mac Mini M4 upgrade (~$499):** Deferred — planned for post-Athens once streaming cadence is validated.
+- **Stream diagnostic history:** Multi-week drop-frame issue resolved April 18, 2026 by switching from RTMPS to plain RTMP. See OBS Streaming Configuration section for the full finding and the verification procedure for any future config change.
+
+---
+
+*E.I. Werner / Outside Inn Studios | innkeep@outsideinn.tv | Living Document — update when anything changes*
+*Last updated: April 18, 2026*
